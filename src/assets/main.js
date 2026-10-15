@@ -17,6 +17,42 @@ if (header) {
   onScroll();
 }
 
+/* Barre d'appel mobile : apparaît une fois l'en-tête dépassé (le hero a déjà ses boutons) */
+const callBar = document.querySelector(".call-bar");
+if (callBar) {
+  const threshold = () => (document.querySelector(".hero, .p-hero")?.offsetHeight ?? 300) * 0.7;
+  const onScrollBar = () => callBar.classList.toggle("show", scrollY > threshold());
+  addEventListener("scroll", onScrollBar, { passive: true });
+  onScrollBar();
+}
+
+/* Retour en haut */
+const toTop = document.querySelector(".to-top");
+if (toTop) {
+  const onScrollTop = () => toTop.classList.toggle("show", scrollY > innerHeight * 1.5);
+  addEventListener("scroll", onScrollTop, { passive: true });
+  onScrollTop();
+  toTop.addEventListener("click", () => scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }));
+}
+
+/* Sculptures : bandes horizontales, plein écran, série active dans la barre */
+document.querySelectorAll(".rail-btn").forEach((b) => b.addEventListener("click", () => {
+  const rail = document.getElementById("rail-" + b.dataset.rail);
+  rail?.scrollBy({ left: Number(b.dataset.dir) * rail.clientWidth * 0.8, behavior: reduceMotion ? "auto" : "smooth" });
+}));
+document.querySelectorAll("[data-lb-open]").forEach((b) => b.addEventListener("click", () => {
+  document.querySelector(`[data-lb="${b.dataset.lbOpen}"]`)?.click();
+}));
+const barChips = [...document.querySelectorAll(".series-bar .chip")];
+if (barChips.length) {
+  const spy = new IntersectionObserver((entries) => entries.forEach((e) => {
+    if (!e.isIntersecting) return;
+    barChips.forEach((c) => c.toggleAttribute("aria-current", c.getAttribute("href") === "#" + e.target.id));
+    barChips.forEach((c) => { if (c.hasAttribute("aria-current")) c.setAttribute("aria-current", "true"); });
+  }), { rootMargin: "-45% 0px -50% 0px" });
+  document.querySelectorAll(".series[id]").forEach((s) => spy.observe(s));
+}
+
 /* Menu mobile */
 const menuBtn = document.querySelector(".menu-btn");
 menuBtn?.addEventListener("click", () => {
@@ -111,9 +147,12 @@ if (hero) {
   hero.querySelector(".hero-prev")?.addEventListener("click", () => go(i - 1));
   hero.querySelector(".hero-next")?.addEventListener("click", () => go(i + 1));
   dots.forEach((d, k) => d.addEventListener("click", () => go(k)));
-  hero.addEventListener("mouseenter", stop);
-  hero.addEventListener("mouseleave", play);
-  hero.addEventListener("focusin", stop);
+  // Pause seulement sur la zone de contrôle : l'image occupe tout l'écran, la souris y est presque toujours.
+  const caption = hero.querySelector(".hero-caption");
+  caption?.addEventListener("mouseenter", stop);
+  caption?.addEventListener("mouseleave", play);
+  caption?.addEventListener("focusin", stop);
+  caption?.addEventListener("focusout", play);
   let x0 = null;
   hero.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
   hero.addEventListener("touchend", (e) => {

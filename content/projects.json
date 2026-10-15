@@ -25,7 +25,8 @@
       "Le projet a fait l’objet d’une émission complète de Stéphane Plaza, « Une pièce à vivre », diffusée le 24 avril 2018."
     ],
     "hero": "img_7325-copie",
-    "showcase": 3
+    "showcase": 3,
+    "carousel": 2
   },
   {
     "slug": "maison-contemporaine-annecy-le-vieux",
@@ -48,7 +49,8 @@
       "Le programme superpose deux logements individuels reliés par un ascenseur. Une piscine à débordement prolonge la terrasse et s’ouvre sur le lac d’Annecy."
     ],
     "hero": "img_0503",
-    "showcase": 1
+    "showcase": 1,
+    "carousel": 1
   },
   {
     "slug": "residence-seniors-craponne",
@@ -120,7 +122,8 @@
       "Une maison dans un écrin de verdure à préserver. Le programme : deux chambres avec salles de bains pour les enfants et un bureau commun, reliés à l’existant.",
       "Un volume simple, qui respecte et prolonge une architecture existante harmonieuse."
     ],
-    "hero": "_dsc3247"
+    "hero": "_dsc3247",
+    "carousel": 4
   },
   {
     "slug": "loft-lyon-4",
@@ -303,7 +306,8 @@
     ],
     "hero": "13-img_9766",
     "featured": 6,
-    "showcase": 5
+    "showcase": 5,
+    "carousel": 3
   },
   {
     "slug": "extension-maison-lyon-8",

@@ -144,6 +144,11 @@ ${body}
     <div class="f-giant" aria-hidden="true">Eric Picard<em>.</em></div>
   </div>
 </footer>
+<nav class="call-bar" aria-label="Contact rapide">
+  <a href="tel:${site.phoneIntl}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Appeler</a>
+  <a href="/contact/#architecture">Écrire</a>
+</nav>
+<button type="button" class="to-top" aria-label="Revenir en haut de la page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
 <script src="/assets/main.js" defer></script>
 </body>
 </html>
@@ -228,8 +233,9 @@ const ctaBlock = ({ onContact = false } = {}) => `
 </div>
 <p class="cta-address" data-reveal>${esc(site.studio)} — ${esc(site.street)}, ${site.postalCode} ${site.locality} — ${site.email}</p>`;
 
-const img = (im, alt, { eager = false, full = false } = {}) => {
-  const tag = `<img src="${esc(media(full ? im.src : im.md))}" alt="${esc(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+const img = (im, alt, { eager = false, full = false, lazy = true } = {}) => {
+  const load = eager ? 'fetchpriority="high"' : lazy ? 'loading="lazy"' : "";
+  const tag = `<img src="${esc(media(full ? im.src : im.md))}" alt="${esc(alt)}" ${load} decoding="async">`;
   const webp = full ? im.webp : im.webpMd;
   return webp ? `<picture><source srcset="${esc(media(webp))}" type="image/webp">${tag}</picture>` : tag;
 };
@@ -249,7 +255,17 @@ const yMax = Math.max(...yearsAll);
 
 // Accueil
 {
-  const heroItems = featured.slice(0, 6);
+  // Carrousel : 6 projets + une sculpture en 3e position, pour montrer les deux métiers dès l'arrivée.
+  const sculptSlide = series[0].images[2] && {
+    url: "/sculptures/",
+    short: "Sculpture — Sur la mer",
+    title: "Sculpture d’Eric Picard",
+    commune: "série Sur la mer",
+    cover: series[0].images[2],
+  };
+  // 5 images au plus : au-delà, presque personne ne les voit (champ « carousel » de projects.json).
+  const heroItems = projects.filter((p) => p.carousel).sort((a, b) => a.carousel - b.carousel);
+  if (sculptSlide) heroItems.splice(2, 0, sculptSlide);
   const slides = heroItems.map((p, i) => `
     <div class="hero-slide${i === 0 ? " active" : ""}" data-href="${p.url}" data-title="${esc(p.short)}">
       <img ${i === 0 ? `src="${esc(media(p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.src))}"`} alt="${esc(p.title + " — " + p.commune)}">
@@ -301,7 +317,7 @@ const yMax = Math.max(...yearsAll);
         <h1><span class="l"><span>Eric</span></span><span class="l"><span><em>Picard</em></span></span></h1>
         <p class="hero-kicker">Architecte D.P.L.G & sculpteur — Lyon 4e</p>
         <div class="hero-actions">
-          <a class="btn btn-light" href="/projets/">Les projets</a>
+          <a class="btn btn-light" href="${mailArchi}">Parlons de votre projet</a>
           <a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a>
         </div>
       </div>
@@ -313,7 +329,7 @@ const yMax = Math.max(...yearsAll);
         </div>
         <a href="${heroItems[0].url}"><b>${esc(heroItems[0].short)}</b> <span>→</span></a>
         <div class="hero-progress"><i></i></div>
-        <div class="hero-dots">${heroItems.map((p, k) => `<button type="button" aria-label="${esc(p.short)}">${img(p.cover, "")}<span>${String(k + 1).padStart(2, "0")}</span></button>`).join("")}</div>
+        <div class="hero-dots" style="grid-template-columns:repeat(${heroItems.length},1fr)">${heroItems.map((p, k) => `<button type="button" aria-label="${esc(p.short)}">${img(p.cover, "", { lazy: false })}<span>${String(k + 1).padStart(2, "0")}</span></button>`).join("")}</div>
       </div>
     </div>
   </div>
@@ -478,6 +494,17 @@ ordered.forEach((p, i) => {
   </div>
   ${videos ? `<div class="videos">${videos}</div>` : ""}
   ${gallery ? `<h2 class="visually-hidden">Galerie</h2><div class="gallery">${gallery}</div>` : ""}
+  <aside class="p-cta" data-reveal>
+    <div>
+      <p class="eyebrow"><b>—</b> ${esc(cat.label)}</p>
+      <h2>Un projet similaire&nbsp;? <em>Parlons-en.</em></h2>
+      <p>Eric Picard, architecte D.P.L.G, vous répond directement, de l’étude de faisabilité au suivi de chantier.</p>
+    </div>
+    <div class="cta-actions">
+      <a class="btn" href="tel:${site.phoneIntl}">${site.phone}</a>
+      <a class="btn btn-ghost" href="${mailArchi}">Écrire à l’atelier</a>
+    </div>
+  </aside>
   <nav class="p-nav" aria-label="Autres projets">
     <a href="${prev.url}">${prev.cover ? img(prev.cover, "") : ""}<span><span class="eyebrow">Projet précédent</span><strong>${esc(prev.short)}</strong></span></a>
     <a href="${next.url}">${next.cover ? img(next.cover, "") : ""}<span><span class="eyebrow">Projet suivant</span><strong>${esc(next.short)}</strong></span></a>
@@ -515,26 +542,44 @@ ordered.forEach((p, i) => {
 
 // Sculptures
 {
+  // Page d'artiste : une œuvre en grand, puis chaque série sur une bande horizontale (une série ≈ un écran).
+  const sHero = series[0].images[2] ?? series[0].images[0];
   const body = `
-<section class="page-head">
-  <div class="wrap">
-    ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"]])}
-    <h1>Et de la <em>sculpture</em>…</h1>
-    <p class="intro-text">À côté de l’architecture, un travail de sculpteur : ${sculptureCount} pièces réunies en quatre séries.</p>
-    <nav class="series-nav" aria-label="Séries">${series.map((s) => `<a class="chip" href="#${s.id}">${esc(s.title)} <sup>${s.images.length}</sup></a>`).join("")}</nav>
-    <div class="cta-links" style="margin-top:28px"><a class="link-arrow" href="${mailSculpt}">Acquérir une œuvre ou passer commande ${arrow}</a><a class="link-arrow" href="${site.instagram}" rel="noopener">Suivre sur Instagram ${arrow}</a></div>
+<section class="s-hero">
+  <div class="wrap s-hero-grid">
+    <div class="s-hero-copy">
+      ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"]])}
+      <p class="eyebrow"><b>—</b> Le sculpteur</p>
+      <h1>Et de la <em>sculpture…</em></h1>
+      <p class="intro-text">Le même regard que pour l’architecture : des volumes, de la lumière, la matière travaillée à la main. ${sculptureCount} œuvres réunies en quatre séries — la mer, des hauts-reliefs réalisés en Afrique, des pièces murales.</p>
+      <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Commander une œuvre</a><a class="btn btn-ghost-light" href="#${series[0].id}">Découvrir les séries</a></div>
+    </div>
+    <figure class="s-hero-img">${img(sHero, "Sculpture d’Eric Picard, série Sur la mer", { eager: true, full: true })}</figure>
   </div>
 </section>
+<nav class="series-bar" aria-label="Séries">
+  <div class="wrap">${series.map((s, n) => `<a class="chip" href="#${s.id}"><b>${String(n + 1).padStart(2, "0")}</b> ${esc(s.title)} <sup>${s.images.length}</sup></a>`).join("")}</div>
+</nav>
 <div class="wrap">
   ${series.map((s, n) => `
   <section class="series" id="${s.id}">
-    <div class="series-head"><h2 data-reveal>${esc(s.title)}</h2><span>${String(n + 1).padStart(2, "0")} — ${s.images.length} œuvres</span></div>
-    <div class="gallery">${s.images.map((im, k) => `<button type="button" data-lb="${s.id}" data-full="${esc(media(im.src))}" data-cap="${esc(s.title)}" aria-label="Agrandir l’œuvre ${k + 1}">${img(im, `Sculpture d’Eric Picard, série ${s.title} — ${k + 1}`)}</button>`).join("")}</div>
+    <div class="series-head">
+      <h2 data-reveal><span class="series-num">${String(n + 1).padStart(2, "0")}</span>${esc(s.title)}</h2>
+      <div class="series-tools">
+        <span>${s.images.length} œuvres</span>
+        <button type="button" class="rail-btn" data-rail="${s.id}" data-dir="-1" aria-label="Œuvres précédentes"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M22 6H2M7 1L2 6l5 5"/></svg></button>
+        <button type="button" class="rail-btn" data-rail="${s.id}" data-dir="1" aria-label="Œuvres suivantes">${arrow}</button>
+        <button type="button" class="btn btn-ghost" data-lb-open="${s.id}">Plein écran</button>
+      </div>
+    </div>
+    <div class="rail" id="rail-${s.id}" tabindex="0" role="region" aria-label="Série ${esc(s.title)} : faire défiler horizontalement">
+      ${s.images.map((im, k) => `<button type="button" data-lb="${s.id}" data-full="${esc(media(im.src))}" data-cap="${esc(s.title)} — ${k + 1} / ${s.images.length}" data-cursor="Voir" aria-label="Agrandir l’œuvre ${k + 1}">${img(im, `Sculpture d’Eric Picard, série ${s.title} — ${k + 1}`)}</button>`).join("")}
+    </div>
   </section>`).join("")}
   <section class="series sculpt-cta" data-reveal>
     <h2>Acquérir une œuvre, <em>passer commande</em></h2>
     <p>Certaines pièces sont disponibles ; d’autres peuvent être réalisées sur commande. Écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent.</p>
-    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a></div>
+    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
   </section>
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
