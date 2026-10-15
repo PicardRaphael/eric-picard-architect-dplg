@@ -459,8 +459,8 @@ const yMax = Math.max(...yearsAll);
   </div>
 </section>`;
   pages.set("/", layout({
-    title: "Eric Picard, architecte D.P.L.G à Lyon — Atelier d’architecture",
-    description: "Eric Picard, architecte D.P.L.G et sculpteur à Lyon 4e : extensions et maisons contemporaines, rénovation d’appartements, commerces, permis de construire — et sculptures à acquérir.",
+    title: "Architecte D.P.L.G à Lyon, Croix-Rousse | Eric Picard",
+    description: "Eric Picard, architecte D.P.L.G et sculpteur à Lyon, Croix-Rousse (4e) : extensions et maisons contemporaines, rénovation d’appartements, commerces, permis de construire — et sculptures à acquérir.",
     path: "/",
     header: "on-dark",
     body,
@@ -838,7 +838,7 @@ ordered.forEach((p, i) => {
 </div>
 <div style="height:clamp(40px,6vw,80px)"></div>`;
   pages.set("/architecte-lyon/", layout({
-    title: "Architecte à Lyon — extension, rénovation | Eric Picard",
+    title: "Architecte à Lyon, Croix-Rousse — extension, rénovation",
     description: "Eric Picard, architecte D.P.L.G à Lyon 4e : extension de maison, maison contemporaine, rénovation d’appartement, commerces, permis de construire et suivi de chantier.",
     path: "/architecte-lyon/",
     body,
