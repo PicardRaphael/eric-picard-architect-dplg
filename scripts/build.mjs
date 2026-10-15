@@ -1,0 +1,789 @@
+// Génère le site statique à partir de content/*.json.
+// Dév.       : node scripts/build.mjs             → dist/, médias chargés depuis l'ancien site
+// Validation : node scripts/build.mjs --staging   → dist-staging/ (à envoyer dans www/new/), non indexé
+// Production : node scripts/build.mjs --prod      → dist/ (à envoyer dans www/)
+// En validation et en production, les médias sont servis depuis /media/ (dossier media/, envoyé une fois).
+import { readFile, writeFile, mkdir, rm, cp } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const PROD = process.argv.includes("--prod");
+const STAGING = process.argv.includes("--staging");
+const LOCAL_MEDIA = PROD || STAGING;
+const BASE = STAGING ? "/new" : "";
+const DIST = join(ROOT, STAGING ? "dist-staging" : "dist");
+const OLD_ORIGIN = "https://picard-architecte.fr";
+const usedMedia = new Set();
+
+const site = JSON.parse(await readFile(join(ROOT, "content/site.json"), "utf8"));
+const projects = JSON.parse(await readFile(join(ROOT, "content/projects.json"), "utf8"));
+const raw = JSON.parse(await readFile(join(ROOT, "content/raw.json"), "utf8"));
+const YEAR = new Date().getFullYear();
+
+/* ---------- Utilitaires ---------- */
+const esc = (s = "") => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// URL d'un média : l'ancien site en dév., /media/<dossier>/<fichier> sinon (images/x/… → media/x/…, video/… → media/video/…).
+const media = (url) => {
+  usedMedia.add(url);
+  return LOCAL_MEDIA ? url.replace(OLD_ORIGIN, "").replace(/^\/images\//, "/media/").replace(/^\/video\//, "/media/video/") : url;
+};
+const abs = (path) => site.url + path;
+const keyOf = (url) => url.replace(/^.*\//, "").replace(/-\d+(-\d+)?\.(jpe?g|png)$/i, "");
+const arrow = `<svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M0 6h20M15 1l5 5-5 5"/></svg>`;
+const diag = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+const cats = Object.fromEntries(site.categories.map((c) => [c.id, c]));
+const statusTag = (p) => (p.status ? `<span class="status" data-s="${esc(p.status)}">${esc(p.status)}</span>` : "");
+const yearsOf = (p) => (String(p.years ?? "").match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
+const lastYear = (p) => Math.max(0, ...yearsOf(p));
+
+/* ---------- Projets : images, vidéos, héros ---------- */
+for (const p of projects) {
+  const seen = new Set();
+  const all = p.sources.flatMap((s) => raw[s]?.images ?? []);
+  const photos = all.filter((im) => !/image-collee|00-garde|notice-de-presentation/.test(im.src));
+  p.images = (photos.length ? photos : all).filter((im) => {
+    const k = keyOf(im.src);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const vids = new Map();
+  for (const s of p.sources) (raw[s]?.videos ?? []).forEach((v, i) => vids.set(v, raw[s].posters?.[i]));
+  for (const name of p.videoNames ?? []) {
+    const a = raw["animations.html"];
+    a.videos.forEach((v, i) => { if (v.includes(name)) vids.set(v, a.posters[i]); });
+  }
+  p.videos = [...vids].map(([src, poster]) => ({ src, poster }));
+  p.cover = p.images.find((im) => p.hero && im.src.includes(p.hero)) ?? p.images[0] ?? (p.videos[0] && { src: p.videos[0].poster, md: p.videos[0].poster });
+  p.url = `/projets/${p.slug}/`;
+}
+const ordered = [...projects].sort((a, b) => lastYear(b) - lastYear(a));
+const featured = projects.filter((p) => p.featured).sort((a, b) => a.featured - b.featured);
+
+/* ---------- Sculptures ---------- */
+const sRaw = raw["Livre/sculpture.html"];
+const SERIES_TITLES = { "Sur la MER": "Sur la mer", "HAUT -RELIEF": "Haut-relief en Afrique", DIVERS: "Divers", MURALES: "Murales" };
+const series = sRaw.markers.map((m, i, arr) => ({
+  title: SERIES_TITLES[m.label],
+  id: SERIES_TITLES[m.label].toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]+/g, "-"),
+  images: sRaw.images.filter((im) => im.pos > m.pos && (!arr[i + 1] || im.pos < arr[i + 1].pos)),
+}));
+const sculptureCount = series.reduce((n, s) => n + s.images.length, 0);
+
+/* ---------- Gabarit ---------- */
+const NAV = [
+  ["/projets/", "Projets"],
+  ["/sculptures/", "Sculptures"],
+  ["/recherches/", "Recherches"],
+  ["/atelier/", "L’atelier"],
+  ["/contact/", "Contact"],
+];
+
+function layout({ title, description, path, body, header = "solid", bodyClass = "", image, jsonld = [], noindex = false }) {
+  const ogImage = image ? media(image) : media(featured[0].cover.src);
+  const ogAbs = ogImage.startsWith("http") ? ogImage : abs(ogImage);
+  const nav = NAV.map(([href, label]) => `<a href="${href}"${path.startsWith(href) ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+  return `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+<link rel="canonical" href="${abs(path)}">
+${noindex ? '<meta name="robots" content="noindex">\n' : ""}<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="${esc(site.studio)}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${abs(path)}">
+<meta property="og:image" content="${esc(ogAbs)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#141413">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</script>`).join("\n")}
+</head>
+<body class="${bodyClass}">
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header class="site-header ${header}">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Eric Picard, architecte — accueil"><span class="brand-name">Eric Picard<i>.</i></span><span class="brand-tag">Architecte D.P.L.G & sculpteur — Lyon</span></a>
+    <button class="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span><span></span></button>
+    <nav class="nav" id="nav" aria-label="Navigation principale">${nav}</nav>
+  </div>
+</header>
+<main id="contenu">
+${body}
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <div class="f-brand">Eric Picard<i>.</i></div>
+        <p>${esc(site.studio)} — architecte D.P.L.G, certifié ADEME HQE. ${esc(site.street)}, ${esc(site.postalCode)} ${esc(site.locality)}.</p>
+      </div>
+      <div>
+        <h3>Explorer</h3>
+        <ul>${NAV.map(([h, l]) => `<li><a href="${h}">${l}</a></li>`).join("")}</ul>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <ul>
+          <li><a href="mailto:${site.email}">${site.email}</a></li>
+          <li><a href="tel:${site.phoneIntl}">${site.phone}</a></li>
+          <li><a href="${site.instagram}" rel="noopener">Instagram</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="bottom"><span>© ${YEAR} Eric Picard, architecte & sculpteur</span><a href="/mentions-legales/">Mentions légales</a></div>
+    <div class="f-giant" aria-hidden="true">Eric Picard<em>.</em></div>
+  </div>
+</footer>
+<script src="/assets/main.js" defer></script>
+</body>
+</html>
+`;
+}
+
+const personLd = {
+  "@type": "Person",
+  "@id": site.url + "/#eric-picard",
+  name: site.name,
+  jobTitle: "Architecte D.P.L.G et sculpteur",
+  sameAs: [site.instagram],
+};
+const businessLd = {
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "@id": site.url + "/#atelier",
+  name: site.studio,
+  description: "Atelier d’architecture à Lyon : maisons individuelles, extensions, logements collectifs, réhabilitation d’appartements et aménagement de commerces.",
+  url: site.url + "/",
+  telephone: site.phoneIntl,
+  email: site.email,
+  image: abs(media(featured[0].cover.src).replace(site.url, "")),
+  address: { "@type": "PostalAddress", streetAddress: "9, rue d’Austerlitz", postalCode: site.postalCode, addressLocality: site.locality, addressRegion: site.region, addressCountry: "FR" },
+  areaServed: ["Lyon", "Rhône", "Auvergne-Rhône-Alpes"],
+  founder: personLd,
+  sameAs: [site.instagram],
+};
+const crumbsLd = (items) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: items.map(([name, path], i) => ({ "@type": "ListItem", position: i + 1, name, item: abs(path) })),
+});
+const crumbs = (items, cls = "") =>
+  `<nav class="crumbs ${cls}" aria-label="Fil d’Ariane">${items
+    .map(([n, h], i) => (i < items.length - 1 ? `<a href="${h}">${esc(n)}</a><span aria-hidden="true">/</span>` : `<span aria-current="page">${esc(n)}</span>`))
+    .join("")}</nav>`;
+
+// <picture> : WebP (≈30 % plus léger) quand l'ancien site en fournit, JPEG/PNG sinon.
+/* Deux portes d'entrée : une mission d'architecte, une sculpture. Missions tirées des projets de l'atelier. */
+// Les liens « mailto: » échouent sans messagerie installée : on renvoie vers la page Contact,
+// qui affiche l'adresse en clair avec un bouton « Copier ».
+const mailArchi = "/contact/#architecture";
+const mailSculpt = "/contact/#sculpture";
+const mailBox = (label) => `
+    <div class="cta-mail">
+      <span class="eyebrow">${label}</span>
+      <a href="mailto:${site.email}">${site.email}</a>
+      <button type="button" class="copy-btn" data-copy="${site.email}">Copier l’adresse</button>
+    </div>`;
+const MISSIONS = [
+  "Extension et réhabilitation de maisons",
+  "Rénovation et aménagement d’appartements",
+  "Aménagement de commerces et de cabinets",
+  "Études de faisabilité et permis de construire",
+  "Mission complète, jusqu’au suivi de chantier",
+  "Accessibilité PMR (Ad’AP) et démarche HQE",
+];
+const ctaBlock = ({ onContact = false } = {}) => `
+<div class="cta-duo">
+  <div class="cta-card" id="architecture" data-reveal>
+    <p class="eyebrow"><b>01</b> — Architecture</p>
+    <h3>Un projet de maison, d’extension ou de rénovation&nbsp;?</h3>
+    <ul class="missions">${MISSIONS.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
+    ${onContact ? mailBox("Écrire à l’atelier") : ""}
+    <div class="cta-actions">
+      <a class="btn" href="tel:${site.phoneIntl}">${site.phone}</a>
+      ${onContact ? "" : `<a class="btn btn-ghost" href="${mailArchi}">Écrire à l’atelier</a>`}
+    </div>
+  </div>
+  <div class="cta-card cta-dark" id="sculpture" data-reveal>
+    ${series[0].images[2] ? `<div class="cta-bg" aria-hidden="true">${img(series[0].images[2], "")}</div>` : ""}
+    <p class="eyebrow"><b>02</b> — Sculpture</p>
+    <h3>Une œuvre vous attire&nbsp;?</h3>
+    <p>Acquisition d’une pièce existante ou sculpture sur commande : écrivez en précisant l’œuvre qui vous intéresse.</p>
+    ${onContact ? mailBox("Écrire au sculpteur") : ""}
+    <div class="cta-actions">
+      ${onContact ? `<a class="btn btn-light" href="tel:${site.phoneIntl}">${site.phone}</a>` : `<a class="btn btn-light" href="${mailSculpt}">Acquérir ou commander</a>`}
+      <a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a>
+    </div>
+  </div>
+</div>
+<p class="cta-address" data-reveal>${esc(site.studio)} — ${esc(site.street)}, ${site.postalCode} ${site.locality} — ${site.email}</p>`;
+
+const img = (im, alt, { eager = false, full = false } = {}) => {
+  const tag = `<img src="${esc(media(full ? im.src : im.md))}" alt="${esc(alt)}" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+  const webp = full ? im.webp : im.webpMd;
+  return webp ? `<picture><source srcset="${esc(media(webp))}" type="image/webp">${tag}</picture>` : tag;
+};
+
+const card = (p, tag = "h2") => `
+<a class="card" href="${p.url}" data-reveal>
+  <div class="work-media">${p.cover ? img(p.cover, p.title) : ""}</div>
+  <${tag}>${esc(p.title)}</${tag}>
+  <div class="meta"><span>${esc(p.short)}</span>${statusTag(p)}</div>
+</a>`;
+
+/* ---------- Pages ---------- */
+const pages = new Map();
+const yearsAll = projects.flatMap(yearsOf);
+const yMin = Math.min(...yearsAll);
+const yMax = Math.max(...yearsAll);
+
+// Accueil
+{
+  const heroItems = featured.slice(0, 6);
+  const slides = heroItems.map((p, i) => `
+    <div class="hero-slide${i === 0 ? " active" : ""}" data-href="${p.url}" data-title="${esc(p.short)}">
+      <img ${i === 0 ? `src="${esc(media(p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.src))}"`} alt="${esc(p.title + " — " + p.commune)}">
+    </div>`).join("");
+  // Les dessins de l'architecte (dossier de l'Espace de la fête), en filigrane derrière les sections.
+  const drawing = (name) => (raw["dossier-plans.html"].images ?? []).find((im) => im.src.includes(name));
+  const texture = (im, cls) => (im ? `<div class="drawing ${cls}" aria-hidden="true"><img src="${esc(media(im.md))}" alt="" loading="lazy" decoding="async"></div>` : "");
+  // Vitrine : 5 projets, un par typologie (champ « showcase » de projects.json) ; le carrousel garde les 6 premiers « featured ».
+  const showcase = projects.filter((p) => p.showcase).sort((a, b) => a.showcase - b.showcase);
+  const shows = showcase.map((p, i) => `
+    <article class="show${i % 2 ? " show-r" : ""}">
+      <a class="show-media" href="${p.url}" data-reveal="wipe" data-cursor="Voir" tabindex="-1" aria-hidden="true"><div class="parallax" data-speed="0.08">${img(p.cover, p.title, { full: true })}</div></a>
+      <div class="show-text" data-reveal>
+        <span class="show-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
+        <p class="eyebrow"><b>${esc(cats[p.category].label)}</b>${yearsOf(p).length ? " — " + Math.max(...yearsOf(p)) : ""}</p>
+        <h3><a href="${p.url}">${esc(p.title)}</a></h3>
+        <p class="show-place">${esc(p.commune)}</p>
+        <p class="show-desc">${esc(p.description)}</p>
+        <a class="link-arrow" href="${p.url}">Voir le projet ${arrow}</a>
+      </div>
+    </article>`).join("");
+  const catRows = site.categories.map((c, i) => {
+    const list = projects.filter((p) => p.category === c.id);
+    return `<a class="cat-row" href="/projets/${c.id}/">
+      <span class="n">${String(i + 1).padStart(2, "0")}</span><span class="t">${esc(c.label)}</span><span class="c">${list.length} projet${list.length > 1 ? "s" : ""}</span>${diag}
+    </a>`;
+  }).join("");
+  const sPick = [series[0].images[2], series[1].images[3], series[0].images[20], series[2].images[5], series[3].images[1], series[1].images[10]].filter(Boolean);
+  const words = ["Architecture", "Sculpture", "Maisons", "Intérieurs", "Commerces", "Lyon"];
+  const marquee = [...words, ...words].map((w) => `<span>${w}</span>`).join("");
+  const body = `
+<section class="hero" aria-label="Projets à la une">
+  ${slides}
+  <div class="hero-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <p class="hero-side" aria-hidden="true">Architecte D.P.L.G — Sculpteur — Lyon</p>
+  <p class="hero-coords" aria-hidden="true">45°46′ N<br>4°50′ E</p>
+  <div class="seal" role="img" aria-label="Architecte diplômé par le gouvernement (D.P.L.G)">
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <defs><path id="seal-path" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs>
+      <g class="seal-ring"><text><textPath href="#seal-path" startOffset="0">Architecte diplômé par le gouvernement • Architecte diplômé par le gouvernement •</textPath></text></g>
+      <circle cx="100" cy="100" r="58" class="seal-inner"/>
+      <text x="100" y="98" text-anchor="middle" class="seal-big">D.P.L.G</text>
+      <text x="100" y="122" text-anchor="middle" class="seal-small">Eric Picard</text>
+    </svg>
+  </div>
+  <div class="hero-content">
+    <div class="wrap">
+      <div>
+        <h1><span class="l"><span>Eric</span></span><span class="l"><span><em>Picard</em></span></span></h1>
+        <p class="hero-kicker">Architecte D.P.L.G & sculpteur — Lyon 4e</p>
+        <div class="hero-actions">
+          <a class="btn btn-light" href="/projets/">Les projets</a>
+          <a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a>
+        </div>
+      </div>
+      <div class="hero-caption">
+        <div class="hero-ctrl">
+          <div class="count">01 / ${String(heroItems.length).padStart(2, "0")}</div>
+          <button type="button" class="hero-prev" aria-label="Projet précédent"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M22 6H2M7 1L2 6l5 5"/></svg></button>
+          <button type="button" class="hero-next" aria-label="Projet suivant">${arrow}</button>
+        </div>
+        <a href="${heroItems[0].url}"><b>${esc(heroItems[0].short)}</b> <span>→</span></a>
+        <div class="hero-progress"><i></i></div>
+        <div class="hero-dots">${heroItems.map((p, k) => `<button type="button" aria-label="${esc(p.short)}">${img(p.cover, "")}<span>${String(k + 1).padStart(2, "0")}</span></button>`).join("")}</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-cue" aria-hidden="true"></div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="marquee-track">${marquee}</div></div>
+
+<section class="section">
+  ${texture(drawing("06-belvedere"), "drawing-right")}
+  <div class="wrap">
+    <div class="intro">
+      <p class="eyebrow" data-reveal><b>01</b> — L’atelier</p>
+      <div>
+        <p class="lead" data-reveal>Des volumes simples, de la lumière, <em>et une écoute attentive de ceux qui habiteront les lieux.</em></p>
+        <p class="lead-sub" data-reveal>Maisons, logements, intérieurs et commerces, conçus depuis l’atelier de la rue d’Austerlitz, à Lyon — de l’esquisse au suivi de chantier.</p>
+        <a class="link-arrow" href="/atelier/" data-reveal>Découvrir l’atelier ${arrow}</a>
+      </div>
+    </div>
+    <div class="intro-foot" data-reveal>
+      <div class="stat"><strong><span data-count="${projects.length}">${projects.length}</span></strong><span>projets présentés</span></div>
+      <div class="stat"><strong><span data-count="${yMax - yMin}">${yMax - yMin}</span><small>ans</small></strong><span>de projets, ${yMin} — ${yMax}</span></div>
+      <div class="stat"><strong><span data-count="${sculptureCount}">${sculptureCount}</span></strong><span>sculptures en quatre séries</span></div>
+      <div class="stat stat-dplg"><strong>D.P.L.G</strong><span>architecte diplômé par le gouvernement</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section-tight" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow" data-reveal><b>02</b> — Réalisations</p>
+      <h2 data-reveal>Projets <em>choisis</em></h2>
+      <a class="link-arrow" href="/projets/" data-reveal>Tous les projets ${arrow}</a>
+    </div>
+    ${shows}
+  </div>
+</section>
+
+<section class="section">
+  ${texture(drawing("08-coupes"), "drawing-left")}
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow" data-reveal><b>03</b> — Typologies</p>
+      <h2 data-reveal>Par <em>typologie</em></h2>
+    </div>
+    <div class="cats" data-reveal>${catRows}</div>
+  </div>
+</section>
+
+<section class="section dark">
+  <div class="wrap sculpt-feature">
+    <div class="sculpt-copy" data-reveal>
+      <p class="eyebrow"><b>04</b> — Le sculpteur</p>
+      <h2>Et de la <em>sculpture…</em></h2>
+      <p>Parallèlement à l’architecture, Eric Picard sculpte : la mer, des hauts-reliefs réalisés en Afrique, des pièces murales. ${sculptureCount} œuvres réunies en quatre séries, à découvrir, à acquérir ou à commander.</p>
+      <div class="cta-links"><a class="link-arrow" href="/sculptures/">Voir les sculptures ${arrow}</a><a class="link-arrow" href="${mailSculpt}">Acquérir une œuvre ${arrow}</a></div>
+    </div>
+    <div class="sculpt-cols">
+      <div class="col" data-speed="-0.05">${sPick.slice(0, 3).map((im) => `<a href="/sculptures/" data-reveal="wipe" data-cursor="Voir" tabindex="-1" aria-hidden="true">${img(im, "")}</a>`).join("")}</div>
+      <div class="col" data-speed="0.07">${sPick.slice(3).map((im) => `<a href="/sculptures/" data-reveal="wipe" data-cursor="Voir" tabindex="-1" aria-hidden="true">${img(im, "")}</a>`).join("")}</div>
+    </div>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="wrap">
+    <div class="creds" data-reveal>
+      ${site.credentials.map((c) => `<div class="cred"><h3>${esc(c.label)}</h3><p>${esc(c.detail)}</p></div>`).join("")}
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:clamp(40px,6vw,80px)">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow" data-reveal><b>05</b> — Contact</p>
+      <h2 data-reveal>Un projet, <em>une œuvre</em>&nbsp;?</h2>
+    </div>
+    ${ctaBlock()}
+  </div>
+</section>`;
+  pages.set("/", layout({
+    title: "Eric Picard, architecte D.P.L.G à Lyon — Atelier d’architecture",
+    description: "Eric Picard, architecte D.P.L.G et sculpteur à Lyon 4e : extensions et maisons contemporaines, rénovation d’appartements, commerces, permis de construire — et sculptures à acquérir.",
+    path: "/",
+    header: "on-dark",
+    body,
+    jsonld: [{ "@context": "https://schema.org", "@type": "WebSite", name: site.studio, url: site.url + "/", inLanguage: "fr-FR" }, businessLd],
+  }));
+}
+
+// Liste des projets (toutes catégories + une page par catégorie)
+for (const c of [null, ...site.categories]) {
+  const list = ordered.filter((p) => !c || p.category === c.id);
+  const path = c ? `/projets/${c.id}/` : "/projets/";
+  const chips = [["Tous", "/projets/", projects.length], ...site.categories.map((x) => [x.label, `/projets/${x.id}/`, projects.filter((p) => p.category === x.id).length])]
+    .map(([l, h, n]) => `<a class="chip" href="${h}"${h === path ? ' aria-current="page"' : ""}>${esc(l)} <sup>${n}</sup></a>`).join("");
+  const crumbItems = c ? [["Accueil", "/"], ["Projets", "/projets/"], [c.label, path]] : [["Accueil", "/"], ["Projets", "/projets/"]];
+  const body = `
+<section class="page-head">
+  <div class="wrap">
+    ${crumbs(crumbItems)}
+    <h1>${c ? esc(c.label) : "Pro<em>jets</em>"}</h1>
+    <p class="intro-text">${c ? esc(c.description) : "Constructions neuves, extensions, réhabilitations, intérieurs et commerces : une sélection de projets de l’atelier, du plus récent au plus ancien."}</p>
+  </div>
+</section>
+<section class="wrap" style="padding-bottom:clamp(80px,10vw,140px)">
+  <nav class="filters" aria-label="Filtrer par typologie">${chips}</nav>
+  <div class="grid">${list.map((p) => card(p)).join("")}</div>
+  ${!c || c.id === "logements" ? `<div class="archive-note"><p>Les projets publics, les collectifs, les lotissements et les maisons groupées restent consultables sur l’ancien site de l’atelier.</p><a class="link-arrow" href="${site.oldSite}" rel="noopener">Ancien site ${arrow}</a></div>` : ""}
+</section>`;
+  pages.set(path, layout({
+    title: c ? `${c.label} — projets à Lyon | Eric Picard` : "Projets d’architecture à Lyon | Eric Picard",
+    description: c ? `${c.description} Réalisations et études d’Eric Picard, architecte D.P.L.G à Lyon.` : `${projects.length} projets de l’atelier Eric Picard, architecte D.P.L.G à Lyon : maisons contemporaines, extensions, logements, appartements et commerces.`,
+    path,
+    body,
+    jsonld: [crumbsLd(crumbItems)],
+  }));
+}
+
+// Fiches projet
+ordered.forEach((p, i) => {
+  const prev = ordered[(i - 1 + ordered.length) % ordered.length];
+  const next = ordered[(i + 1) % ordered.length];
+  const cat = cats[p.category];
+  const rows = [
+    ["Lieu", p.address ?? p.commune],
+    ["Maître d’ouvrage", p.client],
+    ["Programme", p.operation],
+    ["Surface", p.surface],
+    ["Coût des travaux", p.cost],
+    ["Années", p.years],
+    ["Statut", p.status],
+    ["Typologie", `<a href="/projets/${cat.id}/">${esc(cat.label)}</a>`],
+  ].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${k === "Typologie" ? v : esc(v)}</dd></div>`).join("");
+  const [first, ...rest] = p.text;
+  const crumbItems = [["Accueil", "/"], ["Projets", "/projets/"], [cat.label, `/projets/${cat.id}/`], [p.short, p.url]];
+  const gallery = p.images.map((im, n) =>
+    `<button type="button" data-lb="p" data-full="${esc(media(im.src))}" data-cap="${esc(p.title)}" aria-label="Agrandir l’image ${n + 1}">${img(im, `${p.title}, ${p.commune} — vue ${n + 1}`)}</button>`).join("");
+  const videos = p.videos.map((v) => `
+    <figure class="video" data-reveal>
+      <video controls preload="none" playsinline ${v.poster ? `poster="${esc(media(v.poster))}"` : ""}><source src="${esc(media(v.src))}" type="video/mp4"></video>
+      <figcaption>Animation 3D du projet</figcaption>
+    </figure>`).join("");
+  const body = `
+<section class="p-hero">
+  ${p.cover ? img(p.cover, `${p.title} — ${p.commune}`, { eager: true, full: true }) : ""}
+  <div class="wrap">
+    ${crumbs(crumbItems)}
+    <h1>${esc(p.title)}</h1>
+    <p class="place">${esc(p.commune)}${p.years ? " · " + esc(p.years) : ""}</p>
+  </div>
+</section>
+<div class="wrap">
+  <div class="p-body">
+    <aside class="fiche" aria-label="Fiche technique"><p class="eyebrow" style="margin-bottom:16px">Fiche technique</p><dl>${rows}</dl></aside>
+    <div class="p-text" data-reveal>
+      <p class="first">${esc(first)}</p>
+      ${rest.map((t) => `<p>${esc(t)}</p>`).join("")}
+    </div>
+  </div>
+  ${videos ? `<div class="videos">${videos}</div>` : ""}
+  ${gallery ? `<h2 class="visually-hidden">Galerie</h2><div class="gallery">${gallery}</div>` : ""}
+  <nav class="p-nav" aria-label="Autres projets">
+    <a href="${prev.url}">${prev.cover ? img(prev.cover, "") : ""}<span><span class="eyebrow">Projet précédent</span><strong>${esc(prev.short)}</strong></span></a>
+    <a href="${next.url}">${next.cover ? img(next.cover, "") : ""}<span><span class="eyebrow">Projet suivant</span><strong>${esc(next.short)}</strong></span></a>
+  </nav>
+</div>
+<div style="height:clamp(60px,8vw,120px)"></div>`;
+  pages.set(p.url, layout({
+    // Premier titre de 65 caractères maximum : Google tronque au-delà.
+    title: [
+      `${p.title} — ${p.commune.replace(/\s*\(.*\)/, "")} | Eric Picard`,
+      `${p.title} — ${p.commune.replace(/\s*\(.*\)/, "")}`,
+      `${p.short} | Eric Picard, architecte`,
+    ].find((t) => t.length <= 65) ?? p.short,
+    description: p.description,
+    path: p.url,
+    header: "on-dark",
+    image: p.cover?.src,
+    body,
+    jsonld: [
+      crumbsLd(crumbItems),
+      {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: p.title,
+        description: p.description,
+        url: abs(p.url),
+        image: p.images.slice(0, 6).map((im) => media(im.src)).map((u) => (u.startsWith("http") ? u : abs(u))),
+        creator: personLd,
+        locationCreated: { "@type": "Place", name: p.commune },
+        ...(yearsOf(p).length ? { dateCreated: String(Math.max(...yearsOf(p))) } : {}),
+      },
+    ],
+  }));
+});
+
+// Sculptures
+{
+  const body = `
+<section class="page-head">
+  <div class="wrap">
+    ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"]])}
+    <h1>Et de la <em>sculpture</em>…</h1>
+    <p class="intro-text">À côté de l’architecture, un travail de sculpteur : ${sculptureCount} pièces réunies en quatre séries.</p>
+    <nav class="series-nav" aria-label="Séries">${series.map((s) => `<a class="chip" href="#${s.id}">${esc(s.title)} <sup>${s.images.length}</sup></a>`).join("")}</nav>
+    <div class="cta-links" style="margin-top:28px"><a class="link-arrow" href="${mailSculpt}">Acquérir une œuvre ou passer commande ${arrow}</a><a class="link-arrow" href="${site.instagram}" rel="noopener">Suivre sur Instagram ${arrow}</a></div>
+  </div>
+</section>
+<div class="wrap">
+  ${series.map((s, n) => `
+  <section class="series" id="${s.id}">
+    <div class="series-head"><h2 data-reveal>${esc(s.title)}</h2><span>${String(n + 1).padStart(2, "0")} — ${s.images.length} œuvres</span></div>
+    <div class="gallery">${s.images.map((im, k) => `<button type="button" data-lb="${s.id}" data-full="${esc(media(im.src))}" data-cap="${esc(s.title)}" aria-label="Agrandir l’œuvre ${k + 1}">${img(im, `Sculpture d’Eric Picard, série ${s.title} — ${k + 1}`)}</button>`).join("")}</div>
+  </section>`).join("")}
+  <section class="series sculpt-cta" data-reveal>
+    <h2>Acquérir une œuvre, <em>passer commande</em></h2>
+    <p>Certaines pièces sont disponibles ; d’autres peuvent être réalisées sur commande. Écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent.</p>
+    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a></div>
+  </section>
+</div>
+<div style="height:clamp(60px,8vw,120px)"></div>`;
+  pages.set("/sculptures/", layout({
+    title: "Sculptures — Eric Picard, architecte et sculpteur à Lyon",
+    description: `Le travail de sculpteur d’Eric Picard, architecte à Lyon : ${sculptureCount} œuvres en quatre séries — sur la mer, haut-relief en Afrique, divers et murales.`,
+    path: "/sculptures/",
+    header: "night",
+    bodyClass: "night",
+    image: series[0].images[2]?.src,
+    body,
+    jsonld: [crumbsLd([["Accueil", "/"], ["Sculptures", "/sculptures/"]])],
+  }));
+}
+
+// Recherches : l'espace de la fête
+{
+  const plans = (raw["dossier-plans.html"].images ?? []).filter((im) => !/image-collee|article/.test(im.src));
+  const histo = raw["Livre/dossier-historique.html"].images ?? [];
+  const article = (raw["dossier-plans.html"].images ?? []).find((im) => /article/.test(im.src));
+  const gal = (list, g, label) => list.map((im, k) => `<button type="button" data-lb="${g}" data-full="${esc(media(im.src))}" data-cap="${esc(label)}" aria-label="Agrandir la planche ${k + 1}">${img(im, `${label} — planche ${k + 1}`)}</button>`).join("");
+  const body = `
+<section class="page-head">
+  <div class="wrap">
+    ${crumbs([["Accueil", "/"], ["Recherches", "/recherches/"]])}
+    <h1>L’espace <em>de la fête</em></h1>
+    <p class="intro-text">Utopie ou réalité ? Un essai de définition et de représentation de l’espace de la fête : sujet de diplôme, lauréat de la Société Académique d’Architecture de Lyon.</p>
+  </div>
+</section>
+<div class="wrap">
+  <div class="split" style="padding-bottom:clamp(56px,8vw,110px)">
+    <div class="prose" data-reveal>
+      <p>Une architecture organique, pensée pour accueillir la fête. Le projet retrace d’abord l’histoire de la fête à travers les époques, puis en propose une représentation spatiale, sur les berges du Rhône : forum, belvédère, espaces nautiques.</p>
+      <p>Sujet de diplôme, ce travail a reçu le Grand Prix de la Société Académique d’Architecture de Lyon.</p>
+      <p>Il attend toujours son mécène.</p>
+    </div>
+    ${article ? `<div data-reveal><button type="button" class="map-link" data-lb="article" data-full="${esc(media(article.src))}" data-cap="Article de presse" aria-label="Agrandir l’article">${img(article, "Article de presse consacré au projet")}</button></div>` : ""}
+  </div>
+  <section class="series" style="border-color:var(--line)"><div class="series-head"><h2 data-reveal>Le dossier de plans</h2><span>${plans.length} planches</span></div><div class="gallery">${gal(plans, "plans", "L’espace de la fête — dossier de plans")}</div></section>
+  <section class="series" style="border-color:var(--line)"><div class="series-head"><h2 data-reveal>Le dossier <em>historique</em></h2><span>${histo.length} feuillets</span></div><div class="gallery">${gal(histo, "histo", "L’espace de la fête — dossier historique")}</div></section>
+</div>
+<div style="height:clamp(60px,8vw,120px)"></div>`;
+  pages.set("/recherches/", layout({
+    title: "L’espace de la fête — Recherches | Eric Picard, architecte",
+    description: "Essai de définition et de représentation de l’espace de la fête : une architecture organique sur les berges du Rhône, lauréate de la Société Académique d’Architecture de Lyon.",
+    path: "/recherches/",
+    image: plans[0]?.src,
+    body,
+    jsonld: [crumbsLd([["Accueil", "/"], ["Recherches", "/recherches/"]])],
+  }));
+}
+
+// L'atelier
+{
+  const tl = ordered.filter((p) => yearsOf(p).length).map((p) =>
+    `<li><time>${esc(p.years.replace(/^(Études|Études )\s*/i, ""))}</time><span><a href="${p.url}">${esc(p.title)}</a><small>${esc(p.commune)}</small></span></li>`).join("");
+  const body = `
+<section class="page-head">
+  <div class="wrap">
+    ${crumbs([["Accueil", "/"], ["L’atelier", "/atelier/"]])}
+    <h1>L’<em>atelier</em></h1>
+    <p class="intro-text">${esc(site.studio)}, ${esc(site.street)}, Lyon 4e.</p>
+  </div>
+</section>
+<div class="wrap">
+  <div class="split">
+    <div class="prose" data-reveal>
+      <p class="lead serif" style="font-size:clamp(26px,2.6vw,38px);line-height:1.2;color:var(--ink)">Architecte D.P.L.G installé à Lyon, Eric Picard conçoit des maisons, des logements, des intérieurs et des commerces, de l’étude de faisabilité jusqu’au suivi de chantier.</p>
+      <p>Chaque projet part d’un dialogue étroit avec ses clients : une imbrication de volumes simples, une attention au site, à la lumière et à l’existant, et un travail mené avec les artisans — ébénistes, staffeurs, marbriers, serruriers.</p>
+      <p>L’atelier affiche les certifications ADEME HQE (mention Très Bien) et Ad’AP. Eric Picard a été lauréat de la Société Académique d’Architecture de Lyon.</p>
+      <p>En parallèle, Eric Picard poursuit un travail de <a href="/sculptures/">sculpteur</a>.</p>
+      <h2>Distinctions & certifications</h2>
+      <ul>${site.credentials.map((c) => `<li><strong>${esc(c.label)}</strong> — ${esc(c.detail)}</li>`).join("")}</ul>
+    </div>
+    <div data-reveal>
+      <p class="eyebrow" style="margin-bottom:16px">Projets, du plus récent au plus ancien</p>
+      <ol class="timeline">${tl}</ol>
+    </div>
+  </div>
+</div>
+<div style="height:clamp(80px,10vw,160px)"></div>`;
+  pages.set("/atelier/", layout({
+    title: "L’atelier — Eric Picard, architecte D.P.L.G à Lyon 4e",
+    description: "Eric Picard, architecte D.P.L.G à Lyon 4e, certifié ADEME HQE : maisons, logements, intérieurs et commerces, de l’étude au suivi de chantier.",
+    path: "/atelier/",
+    body,
+    jsonld: [crumbsLd([["Accueil", "/"], ["L’atelier", "/atelier/"]]), { "@context": "https://schema.org", ...personLd, worksFor: { "@id": site.url + "/#atelier" } }],
+  }));
+}
+
+// Contact
+{
+  const osm = "https://www.openstreetmap.org/search?query=" + encodeURIComponent("9 rue d'Austerlitz 69004 Lyon");
+  const photo = projects.find((p) => p.slug === "loft-lyon-4").images[4];
+  const body = `
+<section class="page-head">
+  <div class="wrap">
+    ${crumbs([["Accueil", "/"], ["Contact", "/contact/"]])}
+    <h1>Con<em>tact</em></h1>
+  </div>
+</section>
+<div class="wrap">
+  ${ctaBlock({ onContact: true })}
+  <div class="split" style="padding:clamp(64px,8vw,120px) 0 clamp(80px,10vw,160px)">
+    <div class="contact-band" data-reveal>
+      <h2 style="font-size:clamp(40px,5.4vw,84px)"><a href="mailto:${site.email}">${site.email.replace("@", "@<wbr>")}</a></h2>
+      <div class="contact-grid" style="grid-template-columns:1fr 1fr">
+        <div><span class="eyebrow">Téléphone</span><a href="tel:${site.phoneIntl}">${site.phone}</a></div>
+        <div><span class="eyebrow">Adresse</span>${esc(site.street)}<br>${site.postalCode} ${site.locality}<br><a href="${osm}" rel="noopener" style="font-size:14px;color:var(--muted)">Voir sur la carte →</a></div>
+        <div><span class="eyebrow">Instagram</span><a href="${site.instagram}" rel="noopener">@picardarchitecte</a></div>
+      </div>
+    </div>
+    <div data-reveal><a class="map-link" href="${osm}" rel="noopener" aria-label="Localiser l’atelier sur OpenStreetMap">${photo ? img(photo, "Intérieur réalisé par l’atelier à Lyon 4e") : ""}</a></div>
+  </div>
+</div>`;
+  pages.set("/contact/", layout({
+    title: "Contact — Eric Picard, architecte à Lyon 4e",
+    description: `Contacter Eric Picard, architecte et sculpteur à Lyon 4e, pour un projet d’architecture ou une sculpture : ${site.phone} — ${site.email}.`,
+    path: "/contact/",
+    body,
+    jsonld: [crumbsLd([["Accueil", "/"], ["Contact", "/contact/"]]), businessLd],
+  }));
+}
+
+// Mentions légales
+pages.set("/mentions-legales/", layout({
+  title: "Mentions légales | Eric Picard, architecte",
+  description: "Mentions légales du site de l’atelier d’architecture Eric Picard.",
+  path: "/mentions-legales/",
+  body: `
+<section class="page-head"><div class="wrap">${crumbs([["Accueil", "/"], ["Mentions légales", "/mentions-legales/"]])}<h1>Mentions <em>légales</em></h1></div></section>
+<div class="wrap" style="padding-bottom:clamp(80px,10vw,160px)">
+  <div class="prose">
+    <h2>Éditeur</h2>
+    <p>${esc(site.studio)} — Eric Picard, architecte D.P.L.G<br>${esc(site.street)}, ${site.postalCode} ${site.locality}<br>Téléphone : ${site.phone} — E-mail : <a href="mailto:${site.email}">${site.email}</a><br>Directeur de la publication : Eric Picard.</p>
+    <p><!-- À COMPLÉTER : n° d'inscription à l'Ordre des architectes, SIRET --></p>
+    <h2>Hébergement</h2>
+    <p>OVH SAS — 2, rue Kellermann, 59100 Roubaix, France.</p>
+    <h2>Propriété intellectuelle</h2>
+    <p>Les projets, photographies, perspectives, plans et sculptures présentés sur ce site sont la propriété d’Eric Picard ou de leurs auteurs. Toute reproduction sans autorisation est interdite.</p>
+    <h2>Données personnelles</h2>
+    <p>Ce site ne dépose aucun cookie et n’utilise aucun outil de mesure d’audience. Les polices de caractères sont chargées depuis Google Fonts.</p>
+  </div>
+</div>`,
+}));
+
+// 404
+pages.set("/404.html", layout({
+  title: "Page introuvable | Eric Picard, architecte",
+  description: "Cette page n’existe pas ou a été déplacée. Retrouvez les projets, les sculptures et les coordonnées de l’atelier Eric Picard.",
+  path: "/404.html",
+  noindex: true,
+  body: `<section class="err"><div><h1 class="serif">404</h1><p style="margin:16px 0 32px">Cette page n’existe pas ou a été déplacée.</p><a class="link-arrow" href="/projets/">Voir les projets ${arrow}</a></div></section>`,
+}));
+
+/* ---------- Écriture ---------- */
+await rm(DIST, { recursive: true, force: true });
+// Validation : liens internes préfixés par /new (sauf /media, partagé à la racine) et pages non indexées.
+const forBase = (html) => !BASE ? html : html
+  .replace(/(href|src|srcset|data-href|data-src|data-full|data-img|poster)="\/(?!\/|media\/)/g, `$1="${BASE}/`)
+  .replace('<meta name="viewport"', '<meta name="robots" content="noindex, nofollow">\n<meta name="viewport"');
+for (const [path, html] of pages) {
+  const file = path.endsWith(".html") ? join(DIST, path) : join(DIST, path, "index.html");
+  await mkdir(dirname(file), { recursive: true });
+  await writeFile(file, forBase(html));
+}
+await writeFile(join(ROOT, "content/media-manifest.json"), JSON.stringify([...usedMedia].sort(), null, 1));
+await cp(join(ROOT, "src/assets"), join(DIST, "assets"), { recursive: true });
+await writeFile(join(DIST, "favicon.svg"), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#141413"/><text x="32" y="45" font-family="Georgia,serif" font-size="38" text-anchor="middle" fill="#f3f0ea">P</text><circle cx="47" cy="44" r="3.5" fill="#b3311f"/></svg>`);
+
+// SEO : sitemap, robots
+const urls = [...pages.keys()].filter((p) => !p.endsWith(".html"));
+await writeFile(join(DIST, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((u) => `  <url><loc>${abs(u)}</loc><priority>${u === "/" ? "1.0" : u.split("/").length > 3 ? "0.7" : "0.8"}</priority></url>`).join("\n")}
+</urlset>
+`);
+await writeFile(join(DIST, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
+
+// Redirections 301 des anciennes pages Sitely vers les nouvelles URL
+const redirects = new Map([
+  ["/architecte-decoration.html", "/"],
+  ["/ESSAI/public.html", "/projets/logements/"],
+  ["/collectifs.html", "/projets/logements/"],
+  ["/lotissements.html", "/projets/logements/"],
+  ["/maisons-groupees.html", "/projets/logements/"],
+  ["/bureaux-sports.html", "/projets/commerces/"],
+  ["/maisons-individuelles-1.html", "/projets/maisons/"],
+  ["/maisons-individuelles-2.html", "/projets/maisons/"],
+  ["/maisons-individuelles-3.html", "/projets/maisons/"],
+  ["/animations.html", "/projets/maisons/"],
+  ["/apartements.html", "/projets/interieurs/"],
+  ["/decoration.html", "/projets/interieurs/"],
+  ["/espace-fete.html", "/recherches/"],
+  ["/dossier-plans.html", "/recherches/"],
+  ["/Livre/dossier-historique.html", "/recherches/"],
+  ["/Livre/sculpture.html", "/sculptures/"],
+  ["/Livre/contact.html", "/contact/"],
+]);
+for (const p of projects) for (const s of p.sources) redirects.set("/" + s, p.url);
+if (STAGING) {
+  await rm(join(DIST, "sitemap.xml"));
+  await rm(join(DIST, "robots.txt"));
+  await writeFile(join(DIST, ".htaccess"), `# Version de validation (www/new/) — non indexée
+DirectoryIndex index.html
+ErrorDocument 404 ${BASE}/404.html
+AddDefaultCharset utf-8
+<IfModule mod_headers.c>
+  Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+`);
+}
+else await writeFile(join(DIST, ".htaccess"), `# Eric Picard — configuration Apache (OVH mutualisé)
+Options -Indexes
+ErrorDocument 404 /404.html
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+
+# HTTPS et domaine sans www
+RewriteEngine On
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP_HOST} ^www\\.picard-architecte\\.fr$ [NC]
+RewriteRule ^(.*)$ https://picard-architecte.fr/$1 [R=301,L]
+
+# Anciennes pages (Sitely) → nouvelles pages
+${[...redirects].map(([from, to]) => `Redirect 301 ${from} ${to}`).join("\n")}
+
+# Compression et cache
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml application/xml text/plain
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType text/javascript "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType video/mp4 "access plus 1 year"
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+`);
+
+const mode = PROD ? "production" : STAGING ? "validation (www/new/)" : "dév. : médias de " + OLD_ORIGIN;
+console.log(`${pages.size} pages générées dans ${DIST.replace(ROOT, "").slice(1)}/ (${mode}), ${usedMedia.size} médias, ${STAGING ? 0 : redirects.size} redirections.`);

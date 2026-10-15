@@ -1,0 +1,29 @@
+{
+  "url": "https://picard-architecte.fr",
+  "name": "Eric Picard",
+  "studio": "Atelier d’architecture Eric Picard",
+  "title": "Architecte D.P.L.G",
+  "city": "Lyon",
+  "street": "9, rue d’Austerlitz",
+  "postalCode": "69004",
+  "locality": "Lyon",
+  "region": "Auvergne-Rhône-Alpes",
+  "phone": "06 63 05 53 41",
+  "phoneIntl": "+33663055341",
+  "email": "picard.archi@gmail.com",
+  "instagram": "https://www.instagram.com/picardarchitecte/",
+  "oldSite": "https://www.2020.picard-architecte.fr/",
+  "credentials": [
+    { "label": "Architecte D.P.L.G", "detail": "Diplômé par le gouvernement" },
+    { "label": "Certification ADEME — HQE", "detail": "Haute qualité environnementale, mention Très Bien" },
+    { "label": "Ad’AP", "detail": "Agenda d’accessibilité programmée" },
+    { "label": "Lauréat de la Société Académique d’Architecture de Lyon", "detail": "« Un centre de loisirs à Lyon-Gerland » et « Essai de définition et de représentation de l’espace de la fête »" }
+  ],
+  "categories": [
+    { "id": "maisons", "label": "Maisons", "description": "Constructions neuves, extensions et réhabilitations de maisons individuelles." },
+    { "id": "logements", "label": "Logements collectifs", "description": "Résidences et immeubles de logements." },
+    { "id": "interieurs", "label": "Intérieurs", "description": "Restructuration et décoration d’appartements." },
+    { "id": "commerces", "label": "Commerces & cabinets", "description": "Boutiques, salons et locaux professionnels." },
+    { "id": "etudes", "label": "Études", "description": "Études de faisabilité et projets non réalisés." }
+  ]
+}
