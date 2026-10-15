@@ -663,7 +663,7 @@ ordered.forEach((p, i) => {
       <p class="intro-text">Une œuvre pensée pour un lieu, une personne, une histoire. Eric Picard, architecte D.P.L.G et sculpteur à Lyon, réalise des sculptures sur commande : pièces à poser, hauts-reliefs, pièces murales — avec le regard d’un architecte sur l’espace qui les accueillera.</p>
       <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Demander un devis</a><a class="btn btn-ghost-light" href="/sculptures/">Voir les œuvres</a></div>
     </div>
-    <figure class="s-hero-img">${img(pick(1, 3), "Haut-relief sculpté par Eric Picard", { eager: true, full: true })}</figure>
+    <figure class="s-hero-img">${img(pick(2, 5), "Sculpture d’Eric Picard", { eager: true, full: true })}</figure>
   </div>
 </section>
 <div class="wrap">
@@ -700,7 +700,7 @@ ordered.forEach((p, i) => {
     path: "/sculpture-sur-commande/",
     header: "night",
     bodyClass: "night",
-    image: pick(1, 3)?.src,
+    image: pick(2, 5)?.src,
     body,
     jsonld: [
       crumbsLd([["Accueil", "/"], ["Sculptures", "/sculptures/"], ["Sculpture sur commande", "/sculpture-sur-commande/"]]),
