@@ -26,6 +26,12 @@ const sizeOf = (url) => {
   return d ? `width="${d[0]}" height="${d[1]}"` : "";
 };
 const YEAR = new Date().getFullYear();
+// Numéro de version des fichiers CSS/JS (empreinte du contenu) : le serveur les met en cache 30 jours,
+// donc chaque modification change l'URL et les navigateurs rechargent la nouvelle version.
+const { createHash } = await import("node:crypto");
+const version = async (file) => createHash("sha1").update(await readFile(join(ROOT, file))).digest("hex").slice(0, 8);
+const CSS_V = await version("src/assets/style.css");
+const JS_V = await version("src/assets/main.js");
 
 /* ---------- Utilitaires ---------- */
 const esc = (s = "") => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -113,7 +119,7 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ""}<meta property="og:t
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="/assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/assets/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/style.css?v=${CSS_V}">
 ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</script>`).join("\n")}
 </head>
 <body class="${bodyClass}">
@@ -163,7 +169,7 @@ ${body}
   <a href="/contact/#architecture">Écrire</a>
 </nav>
 <button type="button" class="to-top" aria-label="Revenir en haut de la page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
-<script src="/assets/main.js" defer></script>
+<script src="/assets/main.js?v=${JS_V}" defer></script>
 </body>
 </html>
 `;
