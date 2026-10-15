@@ -6,7 +6,7 @@ Faire les étapes dans l'ordre : les premières rapportent le plus.
 Règle d'or : partout, exactement le même nom, la même adresse, le même téléphone :
 
 ```
-Eric Picard – Architecte D.P.L.G
+Atelier d'architecture Eric Picard
 9, rue d'Austerlitz, 69004 Lyon
 06 63 05 53 41
 https://picard-architecte.fr
@@ -35,7 +35,7 @@ C'est elle qui s'affiche sur Google Maps et à droite des résultats quand on ch
 
 https://business.google.com → *Ajouter votre établissement*
 
-- **Nom** : `Eric Picard – Architecte D.P.L.G`
+- **Nom** : `Atelier d'architecture Eric Picard` (le nom réel de l'atelier, sans mots-clés ajoutés : sinon Google peut suspendre la fiche)
 - **Catégorie principale** : `Architecte`
 - **Catégories secondaires** (si proposées) : `Architecte d'intérieur`, `Sculpteur`
 - **Adresse** : 9, rue d'Austerlitz, 69004 Lyon (ou « zone desservie » si on ne reçoit pas à l'atelier)
