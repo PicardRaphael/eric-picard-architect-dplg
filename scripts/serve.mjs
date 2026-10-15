@@ -16,7 +16,7 @@ const TYPES = {
   ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript",
   ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
   ".webp": "image/webp", ".mp4": "video/mp4", ".xml": "application/xml", ".txt": "text/plain",
-  ".ico": "image/x-icon",
+  ".ico": "image/x-icon", ".woff2": "font/woff2",
 };
 
 const send = async (res, file, status = 200) => {

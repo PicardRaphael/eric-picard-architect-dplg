@@ -14,16 +14,53 @@
   "instagram": "https://www.instagram.com/picardarchitecte/",
   "oldSite": "https://www.2020.picard-architecte.fr/",
   "credentials": [
-    { "label": "Architecte D.P.L.G", "detail": "Diplômé par le gouvernement" },
-    { "label": "Certification ADEME — HQE", "detail": "Haute qualité environnementale, mention Très Bien" },
-    { "label": "Ad’AP", "detail": "Agenda d’accessibilité programmée" },
-    { "label": "Lauréat de la Société Académique d’Architecture de Lyon", "detail": "« Un centre de loisirs à Lyon-Gerland » et « Essai de définition et de représentation de l’espace de la fête »" }
+    {
+      "label": "Architecte D.P.L.G",
+      "detail": "Diplômé par le gouvernement"
+    },
+    {
+      "label": "Certification ADEME — HQE",
+      "detail": "Haute qualité environnementale, mention Très Bien"
+    },
+    {
+      "label": "Ad’AP",
+      "detail": "Agenda d’accessibilité programmée"
+    },
+    {
+      "label": "Lauréat de la Société Académique d’Architecture de Lyon",
+      "detail": "« Un centre de loisirs à Lyon-Gerland » et « Essai de définition et de représentation de l’espace de la fête »"
+    }
   ],
   "categories": [
-    { "id": "maisons", "label": "Maisons", "description": "Constructions neuves, extensions et réhabilitations de maisons individuelles." },
-    { "id": "logements", "label": "Logements collectifs", "description": "Résidences et immeubles de logements." },
-    { "id": "interieurs", "label": "Intérieurs", "description": "Restructuration et décoration d’appartements." },
-    { "id": "commerces", "label": "Commerces & cabinets", "description": "Boutiques, salons et locaux professionnels." },
-    { "id": "etudes", "label": "Études", "description": "Études de faisabilité et projets non réalisés." }
+    {
+      "id": "maisons",
+      "label": "Maisons",
+      "description": "Constructions neuves, extensions et réhabilitations de maisons individuelles.",
+      "intro": "Construction de maisons contemporaines, extensions et réhabilitations : à Lyon, dans l’Ouest lyonnais et l’Est du Rhône, mais aussi en Haute-Savoie, dans le Var ou en Gironde. Chaque projet part d’une imbrication de volumes simples, d’une attention au terrain et à la lumière, et d’un dialogue étroit avec les propriétaires — de l’esquisse au permis de construire, puis au suivi de chantier."
+    },
+    {
+      "id": "logements",
+      "label": "Logements collectifs",
+      "description": "Résidences et immeubles de logements.",
+      "intro": "Résidences et immeubles de logements : de l’étude de faisabilité à la réception des travaux, en concertation avec l’architecte conseil de la commune. La résidence seniors de Craponne (67 logements, livrée en 2019) a conservé et intégré l’ancien Hôtel de la Poste."
+    },
+    {
+      "id": "interieurs",
+      "label": "Intérieurs",
+      "description": "Restructuration et décoration d’appartements.",
+      "intro": "Restructuration, rénovation et décoration d’appartements à Lyon et ailleurs : lofts en duplex, appartements bourgeois, chalet, appartement dans la Tour panoramique de la Duchère. Un travail mené avec les artisans — ébénistes, staffeurs, marbriers, serruriers — jusqu’au choix des luminaires et des couleurs."
+    },
+    {
+      "id": "commerces",
+      "label": "Commerces & cabinets",
+      "description": "Boutiques, salons et locaux professionnels.",
+      "intro": "Aménagement de boutiques, de salons et de locaux professionnels à Lyon : mobilier sur mesure, mise en lumière, mise aux normes d’accessibilité PMR. Des projets menés par phases quand l’activité doit continuer pendant les travaux."
+    },
+    {
+      "id": "etudes",
+      "label": "Études",
+      "description": "Études de faisabilité et projets non réalisés.",
+      "intro": "Études de faisabilité, esquisses et projets qui n’ont pas (encore) été réalisés : des pistes explorées avec les clients, présentées ici pour montrer la démarche de l’atelier."
+    }
   ]
 }

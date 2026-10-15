@@ -80,6 +80,7 @@ const sculptureCount = series.reduce((n, s) => n + s.images.length, 0);
 /* ---------- Gabarit ---------- */
 const NAV = [
   ["/projets/", "Projets"],
+  ["/architecte-lyon/", "Missions"],
   ["/sculptures/", "Sculptures"],
   ["/recherches/", "Recherches"],
   ["/atelier/", "L’atelier"],
@@ -108,9 +109,8 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ""}<meta property="og:t
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#141413">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" href="/assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/inter-tight-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/style.css">
 ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</script>`).join("\n")}
 </head>
@@ -132,6 +132,10 @@ ${body}
       <div>
         <div class="f-brand">Eric Picard<i>.</i></div>
         <p>${esc(site.studio)} — architecte D.P.L.G, certifié ADEME HQE. ${esc(site.street)}, ${esc(site.postalCode)} ${esc(site.locality)}.</p>
+      </div>
+      <div>
+        <h3>Projets</h3>
+        <ul>${site.categories.map((c) => `<li><a href="/projets/${c.id}/">${esc(c.label)}</a></li>`).join("")}<li><a href="/architecte-lyon/">Architecte à Lyon</a></li></ul>
       </div>
       <div>
         <h3>Explorer</h3>
@@ -180,6 +184,7 @@ const businessLd = {
   image: abs(media(featured[0].cover.src).replace(site.url, "")),
   address: { "@type": "PostalAddress", streetAddress: "9, rue d’Austerlitz", postalCode: site.postalCode, addressLocality: site.locality, addressRegion: site.region, addressCountry: "FR" },
   areaServed: ["Lyon", "Rhône", "Auvergne-Rhône-Alpes"],
+  knowsAbout: ["Extension de maison", "Maison contemporaine", "Rénovation d’appartement", "Réhabilitation", "Permis de construire", "Aménagement de commerces", "Accessibilité PMR", "Haute qualité environnementale", "Sculpture"],
   founder: personLd,
   sameAs: [site.instagram],
 };
@@ -298,7 +303,7 @@ const yMax = Math.max(...yearsAll);
   if (sculptSlide) heroItems.splice(2, 0, sculptSlide);
   const slides = heroItems.map((p, i) => `
     <div class="hero-slide${i === 0 ? " active" : ""}" data-href="${p.url}" data-title="${esc(p.short)}">
-      <img ${i === 0 ? `src="${esc(media(p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.src))}"`} ${sizeOf(p.cover.src)} alt="${esc(p.title + " — " + p.commune)}">
+      <img ${i === 0 ? `src="${esc(media(p.cover.webp ?? p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.webp ?? p.cover.src))}"`} ${sizeOf(p.cover.src)} alt="${esc(p.title + " — " + p.commune)}">
     </div>`).join("");
   // Les dessins de l'architecte (dossier de l'Espace de la fête), en filigrane derrière les sections.
   const drawing = (name) => (raw["dossier-plans.html"].images ?? []).find((im) => im.src.includes(name));
@@ -464,7 +469,7 @@ for (const c of [null, ...site.categories]) {
   <div class="wrap">
     ${crumbs(crumbItems)}
     <h1>${c ? esc(c.label) : "Pro<em>jets</em>"}</h1>
-    <p class="intro-text">${c ? esc(c.description) : "Constructions neuves, extensions, réhabilitations, intérieurs et commerces : une sélection de projets de l’atelier, du plus récent au plus ancien."}</p>
+    <p class="intro-text">${c ? esc(c.intro ?? c.description) : "Constructions neuves, extensions, réhabilitations, intérieurs et commerces : une sélection de projets de l’atelier, du plus récent au plus ancien."}</p>
   </div>
 </section>
 <section class="wrap" style="padding-bottom:clamp(80px,10vw,140px)">
@@ -677,6 +682,80 @@ ordered.forEach((p, i) => {
   }));
 }
 
+// Page « Architecte à Lyon » : missions, exemples réels, déroulé, questions fréquentes.
+{
+  const bySlug = (s) => projects.find((p) => p.slug === s);
+  const links = (slugs) => slugs.map(bySlug).filter(Boolean).map((p) => `<a href="${p.url}">${esc(p.short)}</a>`).join(" · ");
+  const MISSION_BLOCKS = [
+    ["Extension de maison", "Agrandir sans dénaturer : un volume simple qui prolonge l’existant, pensé avec le terrain, la lumière et le budget. Du relevé à la déclaration préalable ou au permis de construire, puis au suivi de chantier.", ["extension-maison-dardilly", "extension-maison-lyon-8", "extension-oullins", "extension-saint-pierre-de-chandieu"]],
+    ["Maison neuve contemporaine", "Une imbrication de volumes simples, implantée au plus juste dans son site — terrain en pente, vue sur un lac, restanques.", ["maison-contemporaine-annecy-le-vieux", "maison-plan-de-la-tour", "maison-contemporaine-bouliac", "trois-maisons-septeme"]],
+    ["Rénovation et réhabilitation", "Maisons bourgeoises, corps de ferme : restructurer les volumes, ouvrir à la lumière, mettre aux normes thermiques, en respectant le caractère du bâti.", ["maison-bourgeoise-hauteville-lompnes", "corps-de-ferme-simandres", "maison-bourgeoise-villeurbanne"]],
+    ["Appartements et intérieurs", "Restructuration lourde, décoration, mobilier sur mesure : un travail de détail mené avec les artisans.", ["loft-lyon-4", "appartement-art-deco-lyon-6", "tour-panoramique-la-duchere", "veranda-bron", "chalet-megeve", "appartement-saint-raphael"]],
+    ["Commerces et cabinets", "Boutiques, salons, cabinets médicaux : mise en scène, lumière, accessibilité PMR, travaux par phases pour maintenir l’activité.", ["boutique-dolce-lyon-2", "salon-emilia-g-lyon-2", "cabinet-podologie-lyon"]],
+    ["Logements collectifs et faisabilité", "Études de faisabilité et opérations de logements, en lien avec l’architecte conseil de la commune.", ["residence-seniors-craponne", "residence-favre-lyon-8"]],
+  ];
+  const STEPS = [
+    ["Rencontre et programme", "Visite des lieux, écoute de vos besoins, de vos contraintes et de votre budget."],
+    ["Esquisse et faisabilité", "Premières propositions de volumes et d’implantation, vérification des règles d’urbanisme (PLU)."],
+    ["Autorisations", "Constitution et dépôt de la déclaration préalable ou du permis de construire."],
+    ["Consultation des entreprises", "Plans, descriptifs, mise en concurrence des artisans et des entreprises."],
+    ["Suivi de chantier et réception", "Réunions de chantier, contrôle de l’exécution, réception des travaux."],
+  ];
+  const FAQ = [
+    ["Quand l’architecte est-il obligatoire ?", "Pour un particulier, le recours à un architecte est obligatoire pour un permis de construire dès que la surface de plancher totale (existant + projet) dépasse 150 m². En dessous, il reste recommandé : il vous aide à concevoir, à obtenir l’autorisation et à suivre les travaux."],
+    ["Extension : déclaration préalable ou permis de construire ?", "En règle générale, une extension jusqu’à 20 m² relève d’une déclaration préalable — jusqu’à 40 m² en zone urbaine d’un PLU. Au-delà, un permis de construire est nécessaire. Le règlement d’urbanisme de votre commune fait foi : c’est l’une des premières vérifications de l’atelier."],
+    ["Intervenez-vous en dehors de Lyon ?", "Oui. L’atelier est installé à Lyon 4e et a mené des projets dans tout le Rhône (Dardilly, Craponne, Oullins, Bron, Villeurbanne, Simandres…), dans l’Ain, en Isère, en Haute-Savoie, dans le Var et en Gironde."],
+    ["Que comprend une mission complète ?", "Les études (esquisse, avant-projet), le dossier d’autorisation, la consultation des entreprises, puis le suivi du chantier jusqu’à la réception des travaux. Une mission peut aussi être limitée à l’étude ou au permis de construire."],
+    ["Et pour un commerce ou un cabinet ?", "L’atelier aménage boutiques, salons et cabinets, avec la mise aux normes d’accessibilité PMR (Ad’AP), et peut organiser les travaux par phases pour que l’activité continue."],
+  ];
+  const plan = (raw["dossier-plans.html"].images ?? []).find((im) => im.src.includes("02-organisation"));
+  const body = `
+<section class="page-head">
+  ${plan ? `<div class="drawing drawing-right" aria-hidden="true"><img src="${esc(media(plan.md))}" ${sizeOf(plan.md)} alt="" loading="lazy" decoding="async"></div>` : ""}
+  <div class="wrap">
+    ${crumbs([["Accueil", "/"], ["Architecte à Lyon", "/architecte-lyon/"]])}
+    <p class="eyebrow"><b>—</b> Missions</p>
+    <h1>Architecte <em>à Lyon</em></h1>
+    <p class="intro-text">Eric Picard, architecte D.P.L.G installé rue d’Austerlitz (Lyon 4e), accompagne particuliers, commerçants et maîtres d’ouvrage : extension de maison, maison contemporaine, rénovation d’appartement, aménagement de commerce — de l’étude de faisabilité au suivi de chantier.</p>
+    <div class="cta-actions"><a class="btn btn-light" href="${mailArchi}">Parlons de votre projet</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a></div>
+  </div>
+</section>
+<div class="wrap">
+  <section class="missions-grid">
+    ${MISSION_BLOCKS.map(([t, d, slugs], i) => `
+    <article class="mission" data-reveal>
+      <span class="series-num">${String(i + 1).padStart(2, "0")}</span>
+      <h2>${esc(t)}</h2>
+      <p>${esc(d)}</p>
+      <p class="mission-links"><span class="eyebrow">Exemples</span> ${links(slugs)}</p>
+    </article>`).join("")}
+  </section>
+  <section class="series">
+    <div class="series-head"><h2 data-reveal>Le <em>déroulé</em> d’une mission</h2></div>
+    <ol class="steps">${STEPS.map(([t, d], i) => `<li data-reveal><span>${String(i + 1).padStart(2, "0")}</span><h3>${esc(t)}</h3><p>${esc(d)}</p></li>`).join("")}</ol>
+  </section>
+  <section class="series">
+    <div class="series-head"><h2 data-reveal>Questions <em>fréquentes</em></h2></div>
+    <div class="faq">${FAQ.map(([q, a]) => `<details data-reveal><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}</div>
+  </section>
+  <section class="series">${ctaBlock()}</section>
+</div>
+<div style="height:clamp(40px,6vw,80px)"></div>`;
+  pages.set("/architecte-lyon/", layout({
+    title: "Architecte à Lyon — extension, rénovation | Eric Picard",
+    description: "Eric Picard, architecte D.P.L.G à Lyon 4e : extension de maison, maison contemporaine, rénovation d’appartement, commerces, permis de construire et suivi de chantier.",
+    path: "/architecte-lyon/",
+    body,
+    jsonld: [
+      crumbsLd([["Accueil", "/"], ["Architecte à Lyon", "/architecte-lyon/"]]),
+      {
+        ...businessLd,
+        makesOffer: MISSION_BLOCKS.map(([t, d]) => ({ "@type": "Offer", itemOffered: { "@type": "Service", name: t, description: d, areaServed: "Lyon" } })),
+      },
+    ],
+  }));
+}
+
 // L'atelier
 {
   const tl = ordered.filter((p) => yearsOf(p).length).map((p) =>
@@ -766,7 +845,7 @@ pages.set("/mentions-legales/", layout({
     <h2>Propriété intellectuelle</h2>
     <p>Les projets, photographies, perspectives, plans et sculptures présentés sur ce site sont la propriété d’Eric Picard ou de leurs auteurs. Toute reproduction sans autorisation est interdite.</p>
     <h2>Données personnelles</h2>
-    <p>Ce site ne dépose aucun cookie et n’utilise aucun outil de mesure d’audience. Les polices de caractères sont chargées depuis Google Fonts.</p>
+    <p>Ce site ne dépose aucun cookie, n’utilise aucun outil de mesure d’audience et ne fait appel à aucun service tiers : polices, images et vidéos sont hébergées sur le site.</p>
   </div>
 </div>`,
 }));
@@ -797,9 +876,19 @@ await writeFile(join(DIST, "favicon.svg"), `<svg xmlns="http://www.w3.org/2000/s
 
 // SEO : sitemap, robots
 const urls = [...pages.keys()].filter((p) => !p.endsWith(".html"));
+const today = new Date().toISOString().slice(0, 10);
+const absMedia = (u) => { const m = media(u); return m.startsWith("http") ? m : abs(m); };
+const pageImages = (u) => {
+  const p = projects.find((x) => x.url === u);
+  if (p) return [p.cover, ...p.images.filter((im) => im !== p.cover)].filter(Boolean).slice(0, 12).map((im) => [absMedia(im.src), p.title]);
+  if (u === "/sculptures/") return series.flatMap((x) => x.images.slice(0, 6).map((im) => [absMedia(im.src), `Sculpture d’Eric Picard, série ${x.title}`]));
+  if (u === "/") return featured.slice(0, 6).map((x) => [absMedia(x.cover.src), x.title]);
+  return [];
+};
+const xmlEsc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 await writeFile(join(DIST, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map((u) => `  <url><loc>${abs(u)}</loc><priority>${u === "/" ? "1.0" : u.split("/").length > 3 ? "0.7" : "0.8"}</priority></url>`).join("\n")}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${urls.map((u) => `  <url><loc>${abs(u)}</loc><lastmod>${today}</lastmod><priority>${u === "/" ? "1.0" : u === "/architecte-lyon/" ? "0.9" : u.split("/").length > 3 ? "0.7" : "0.8"}</priority>${pageImages(u).map(([loc, title]) => `<image:image><image:loc>${xmlEsc(loc)}</image:loc><image:title>${xmlEsc(title)}</image:title></image:image>`).join("")}</url>`).join("\n")}
 </urlset>
 `);
 await writeFile(join(DIST, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${site.url}/sitemap.xml\n`);
@@ -842,6 +931,7 @@ Options -Indexes
 ErrorDocument 404 /404.html
 DirectoryIndex index.html
 AddDefaultCharset utf-8
+AddType font/woff2 .woff2
 
 # HTTPS et domaine sans www
 RewriteEngine On
@@ -867,6 +957,7 @@ ${[...redirects].map(([from, to]) => `Redirect 301 ${from} ${to}`).join("\n")}
   ExpiresByType image/webp "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresByType video/mp4 "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"

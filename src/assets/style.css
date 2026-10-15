@@ -1,5 +1,12 @@
 /* Eric Picard — Architecte & sculpteur. Thème « galerie » sombre. */
 
+/* Polices hébergées sur le site (licence OFL) : plus rapide, et aucune donnée envoyée à Google */
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/instrument-serif-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap; src: url("fonts/instrument-serif-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Inter Tight"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-tight-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter Tight"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-tight-latin-500-normal.woff2") format("woff2"); }
+
+
 :root {
   --paper: #0e0e0d;      /* fond */
   --paper-2: #181816;    /* fond secondaire */
@@ -265,7 +272,7 @@ p { margin: 0 0 1.1em; }
 .show-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.4s var(--ease); }
 .show-media:hover img { transform: scale(1.04); }
 .show-text { grid-column: 9 / span 4; grid-row: 1; position: relative; z-index: 2; padding-bottom: 8px; }
-.show-num { display: block; font: 400 clamp(120px, 14vw, 230px)/.75 var(--serif); letter-spacing: -.05em; color: transparent; -webkit-text-stroke: 1px var(--line-2); margin: 0 0 22px calc(-1 * clamp(40px, 6vw, 110px)); position: relative; z-index: 1; }
+.show-num { display: block; font: 400 clamp(120px, 14vw, 230px)/.75 var(--serif); letter-spacing: -.05em; color: var(--paper); -webkit-text-stroke: 1.6px var(--accent); paint-order: stroke fill; margin: 0 0 22px calc(-1 * clamp(40px, 6vw, 110px)); position: relative; z-index: 1; }
 .show h3 { font-size: clamp(34px, 3.4vw, 56px); line-height: 1; letter-spacing: -.025em; margin: 14px 0 0; }
 .show h3 a { transition: color .3s; }
 .show h3 a:hover { color: var(--accent); }
@@ -421,6 +428,35 @@ p { margin: 0 0 1.1em; }
   .site-footer .bottom { padding-bottom: 96px; }
 }
 
+/* ---------- Page « Architecte à Lyon » ---------- */
+.page-head .cta-actions { padding-top: 32px; }
+.missions-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line-2); }
+.mission { padding: 36px 28px 40px 0; border-bottom: 1px solid var(--line); }
+.mission:not(:nth-child(3n)) { border-right: 1px solid var(--line); margin-right: 28px; }
+.mission .series-num { transform: none; margin: 0 0 18px; display: block; }
+.mission h2 { font-size: clamp(30px, 2.6vw, 42px); letter-spacing: -.02em; line-height: 1.02; }
+.mission p { margin: 16px 0 0; color: var(--ink-2); font-size: 16px; }
+.mission-links { font-size: 14.5px !important; line-height: 1.8; }
+.mission-links .eyebrow { display: block; margin-bottom: 6px; }
+.mission-links a { border-bottom: 1px solid var(--line-2); }
+.mission-links a:hover { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 1000px) { .missions-grid { grid-template-columns: 1fr 1fr; } .mission:nth-child(n) { border-right: 0; margin-right: 0; } .mission:nth-child(odd) { border-right: 1px solid var(--line); margin-right: 28px; } }
+@media (max-width: 640px) { .missions-grid { grid-template-columns: 1fr; } .mission:nth-child(n) { border-right: 0; margin-right: 0; padding-right: 0; } }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; counter-reset: s; }
+.steps li { border-top: 1px solid var(--accent); padding-top: 20px; }
+.steps span { font: 400 clamp(48px, 5vw, 76px)/1 var(--serif); color: var(--paper); -webkit-text-stroke: 1.4px var(--ink); paint-order: stroke fill; }
+.steps h3 { font-size: 26px; margin: 14px 0 10px; line-height: 1.05; }
+.steps p { margin: 0; color: var(--muted); font-size: 15px; }
+@media (max-width: 1000px) { .steps { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
+.faq { border-top: 1px solid var(--line-2); max-width: 980px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; gap: 24px; padding: 24px 0; font: 400 clamp(22px, 2vw, 30px)/1.2 var(--serif); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex: none; color: var(--accent); font-family: var(--sans); font-size: 24px; transition: transform .35s var(--ease); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { margin: 0 0 26px; max-width: 70ch; color: var(--ink-2); font-size: 17px; }
+
 /* ---------- Retour en haut ---------- */
 .to-top {
   position: fixed; right: 20px; bottom: 20px; z-index: 59; width: 54px; height: 54px; display: grid; place-items: center; padding: 0; margin: 0;
@@ -434,7 +470,7 @@ p { margin: 0 0 1.1em; }
 
 /* ---------- Footer ---------- */
 .site-footer { position: relative; overflow: hidden; background: var(--night); color: var(--muted); padding: 88px 0 0; font-size: 14px; border-top: 1px solid var(--line); }
-.site-footer .top { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; padding-bottom: 56px; }
+.site-footer .top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; padding-bottom: 56px; }
 .site-footer .f-brand { font: 400 44px/1 var(--serif); color: var(--ink); }
 .site-footer .f-brand i { color: var(--accent); font-style: normal; }
 .site-footer p { margin: 16px 0 0; max-width: 40ch; }
@@ -442,7 +478,7 @@ p { margin: 0 0 1.1em; }
 .site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
 .site-footer a:hover { color: var(--ink); }
 .site-footer .bottom { display: flex; justify-content: space-between; gap: 16px; padding: 22px 0 26px; border-top: 1px solid var(--line); flex-wrap: wrap; color: #77726a; }
-.f-giant { font: 400 clamp(90px, 21vw, 360px)/.78 var(--serif); letter-spacing: -.05em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px var(--line-2); text-align: center; margin: 0 0 -.06em; user-select: none; }
+.f-giant { font: 400 clamp(90px, 21vw, 360px)/.78 var(--serif); letter-spacing: -.05em; white-space: nowrap; color: var(--night); -webkit-text-stroke: 1.8px rgba(236, 231, 222, .42); paint-order: stroke fill; text-align: center; margin: 0 0 -.06em; user-select: none; }
 .f-giant em { color: var(--accent); -webkit-text-stroke: 0; font-style: normal; }
 @media (max-width: 760px) { .site-footer .top { grid-template-columns: 1fr; } }
 
