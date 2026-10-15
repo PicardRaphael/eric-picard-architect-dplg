@@ -103,7 +103,33 @@ Demander un lien vers `https://picard-architecte.fr` à :
 
 ---
 
-## 6. Ce qui fera encore monter le site (contenu, gratuit)
+## 6. Vendre ses sculptures (gratuit)
+
+Sur le site, c'est prêt : la page **Sculptures** vise « sculpteur Lyon », et la page
+**Sculpture sur commande** (`/sculpture-sur-commande/`) explique comment commander, avec un bouton devis.
+Les 148 œuvres sont déclarées à Google Images via le sitemap.
+
+Pour que des acheteurs la trouvent :
+
+1. **Fiche Google Business Profile** : ajouter la catégorie secondaire `Sculpteur` et le service
+   `Sculpture sur commande` (voir §2). Publier 1 photo d'œuvre par mois.
+2. **Instagram** @picardarchitecte : 1 à 2 publications par semaine — une œuvre, un détail, l'atelier en train de travailler.
+   Mettre le lien `https://picard-architecte.fr/sculpture-sur-commande/` dans la bio.
+   Mots-clés en fin de texte : `#sculpture #sculpteur #sculpteurlyon #artlyon #sculpturecontemporaine #lyon #artiste`
+3. **Pinterest** (compte gratuit) : épingler les photos des œuvres et des réalisations avec le lien vers le site —
+   très utilisé pour chercher des idées de décoration et d'objets d'art, et bien référencé dans Google Images.
+4. **Leboncoin**, rubrique Décoration / Art : annonces gratuites pour quelques pièces disponibles,
+   avec le lien du site dans le texte — clientèle locale, Lyon et région.
+5. **Artmajeur** (formule gratuite) : galerie en ligne d'artistes, pour être visible auprès des amateurs d'art.
+6. **En vrai, à Lyon** : l'atelier est dans le 4e, à la Croix-Rousse, quartier d'artistes — se renseigner sur
+   les marchés de la création, salons d'art et portes ouvertes d'ateliers d'artistes, et laisser des cartes avec l'adresse du site.
+
+Le plus important pour vendre : **les fiches des œuvres** (titre, matière, dimensions, disponible ou non).
+Avec elles, chaque sculpture peut avoir sa légende sur le site, et on peut afficher « disponible » sur les pièces à vendre.
+
+---
+
+## 7. Ce qui fera encore monter le site (contenu, gratuit)
 
 Chaque information de ton père = une page plus forte :
 1. **Quelques phrases** pour Megève, Saint-Raphaël, Oullins, Septème, Mions → modifier `content/projects.json`.

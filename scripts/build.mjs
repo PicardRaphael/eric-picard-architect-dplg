@@ -135,7 +135,7 @@ ${body}
       </div>
       <div>
         <h3>Projets</h3>
-        <ul>${site.categories.map((c) => `<li><a href="/projets/${c.id}/">${esc(c.label)}</a></li>`).join("")}<li><a href="/architecte-lyon/">Architecte à Lyon</a></li></ul>
+        <ul>${site.categories.map((c) => `<li><a href="/projets/${c.id}/">${esc(c.label)}</a></li>`).join("")}<li><a href="/architecte-lyon/">Architecte à Lyon</a></li><li><a href="/sculpture-sur-commande/">Sculpture sur commande</a></li></ul>
       </div>
       <div>
         <h3>Explorer</h3>
@@ -271,7 +271,7 @@ const railSection = ({ id, num, titleHtml, countLabel, images, cap, alt }) => `
     <div class="rail-foot" aria-hidden="true">
       <span class="rail-count" data-rail-count="${id}">01 / ${String(images.length).padStart(2, "0")}</span>
       <span class="rail-progress"><i data-rail-bar="${id}"></i></span>
-      <span class="rail-hint">Faites défiler <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M0 6h24M19 1l5 5-5 5"/></svg></span>
+      <span class="rail-hint"><span class="h-mouse">Faites défiler</span><span class="h-touch">Glissez</span> <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M0 6h24M19 1l5 5-5 5"/></svg></span>
     </div>
   </section>`;
 
@@ -421,7 +421,7 @@ const yMax = Math.max(...yearsAll);
       <p class="eyebrow"><b>04</b> — Le sculpteur</p>
       <h2>Et de la <em>sculpture…</em></h2>
       <p>Parallèlement à l’architecture, Eric Picard sculpte : la mer, des hauts-reliefs réalisés en Afrique, des pièces murales. ${sculptureCount} œuvres réunies en quatre séries, à découvrir, à acquérir ou à commander.</p>
-      <div class="cta-links"><a class="link-arrow" href="/sculptures/">Voir les sculptures ${arrow}</a><a class="link-arrow" href="${mailSculpt}">Acquérir une œuvre ${arrow}</a></div>
+      <div class="cta-links"><a class="link-arrow" href="/sculptures/">Voir les sculptures ${arrow}</a><a class="link-arrow" href="/sculpture-sur-commande/">Sculpture sur commande ${arrow}</a></div>
     </div>
     <div class="sculpt-cols">
       <div class="col" data-speed="-0.05">${sPick.slice(0, 3).map((im) => `<a href="/sculptures/" data-reveal="wipe" data-cursor="Voir" tabindex="-1" aria-hidden="true">${img(im, "")}</a>`).join("")}</div>
@@ -601,8 +601,8 @@ ordered.forEach((p, i) => {
       ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"]])}
       <p class="eyebrow"><b>—</b> Le sculpteur</p>
       <h1>Et de la <em>sculpture…</em></h1>
-      <p class="intro-text">Le même regard que pour l’architecture : des volumes, de la lumière, la matière travaillée à la main. ${sculptureCount} œuvres réunies en quatre séries — la mer, des hauts-reliefs réalisés en Afrique, des pièces murales.</p>
-      <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Commander une œuvre</a><a class="btn btn-ghost-light" href="#${series[0].id}">Découvrir les séries</a></div>
+      <p class="intro-text">Sculpteur à Lyon, Eric Picard porte sur la matière le même regard que sur l’architecture : des volumes, de la lumière, le travail de la main. ${sculptureCount} œuvres réunies en quatre séries — la mer, des hauts-reliefs réalisés en Afrique, des pièces murales. Des pièces à acquérir, et des sculptures sur commande.</p>
+      <div class="cta-actions"><a class="btn btn-light" href="/sculpture-sur-commande/">Sculpture sur commande</a><a class="btn btn-ghost-light" href="#${series[0].id}">Découvrir les séries</a></div>
     </div>
     <figure class="s-hero-img">${img(sHero, "Sculpture d’Eric Picard, série Sur la mer", { eager: true, full: true })}</figure>
   </div>
@@ -623,14 +623,98 @@ ordered.forEach((p, i) => {
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
   pages.set("/sculptures/", layout({
-    title: "Sculptures — Eric Picard, architecte et sculpteur à Lyon",
-    description: `Le travail de sculpteur d’Eric Picard, architecte à Lyon : ${sculptureCount} œuvres en quatre séries — sur la mer, haut-relief en Afrique, divers et murales.`,
+    title: "Sculpteur à Lyon — œuvres et commandes | Eric Picard",
+    description: `Eric Picard, sculpteur et architecte D.P.L.G à Lyon : ${sculptureCount} sculptures — pièces marines, hauts-reliefs, pièces murales. Œuvres à acquérir et sculptures sur commande.`,
     path: "/sculptures/",
     header: "night",
     bodyClass: "night",
     image: series[0].images[2]?.src,
     body,
     jsonld: [crumbsLd([["Accueil", "/"], ["Sculptures", "/sculptures/"]])],
+  }));
+}
+
+// Page « Sculpture sur commande » : ce qu'on peut commander, déroulé, devis, contact.
+{
+  const pick = (si, ii) => series[si]?.images[ii] ?? series[si]?.images[0];
+  const KINDS = [
+    ["Pièces à poser", "Sculptures en volume, à poser sur un meuble, un socle ou en extérieur — comme la série « Sur la mer ».", pick(0, 2), "sur-la-mer"],
+    ["Hauts-reliefs", "Des scènes et des figures qui sortent du fond, à fixer au mur ou à intégrer dans un lieu — comme la série réalisée en Afrique.", pick(1, 3), "haut-relief-en-afrique"],
+    ["Pièces murales", "Des œuvres pensées pour un mur précis : une entrée, un séjour, une boutique, un cabinet.", pick(3, 1), "murales"],
+  ];
+  const STEPS = [
+    ["Échange", "Votre idée, le lieu qui accueillera l’œuvre, le format souhaité, votre budget."],
+    ["Esquisse", "Dessins et premières propositions, ajustés avec vous avant de commencer."],
+    ["Réalisation", "Le travail de la matière à l’atelier, avec des nouvelles de l’avancement en photos."],
+    ["Remise", "Finitions, puis remise de l’œuvre — et, si besoin, conseils pour son installation."],
+  ];
+  const FAQ = [
+    ["Combien coûte une sculpture sur commande ?", "Chaque pièce fait l’objet d’un devis, établi après le premier échange : il dépend du format, de la matière et de la complexité de l’œuvre."],
+    ["Quel délai prévoir ?", "Il varie selon la pièce. Il est précisé dans le devis, avant tout engagement."],
+    ["Peut-on acquérir une œuvre existante ?", "Oui : parcourez les séries, puis écrivez en indiquant l’œuvre qui vous intéresse — Eric Picard vous répondra sur sa disponibilité."],
+  ];
+  const body = `
+<section class="s-hero">
+  <div class="wrap s-hero-grid">
+    <div class="s-hero-copy">
+      ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"], ["Sculpture sur commande", "/sculpture-sur-commande/"]])}
+      <p class="eyebrow"><b>—</b> Le sculpteur</p>
+      <h1>Sculpture <em>sur commande</em></h1>
+      <p class="intro-text">Une œuvre pensée pour un lieu, une personne, une histoire. Eric Picard, architecte D.P.L.G et sculpteur à Lyon, réalise des sculptures sur commande : pièces à poser, hauts-reliefs, pièces murales — avec le regard d’un architecte sur l’espace qui les accueillera.</p>
+      <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Demander un devis</a><a class="btn btn-ghost-light" href="/sculptures/">Voir les œuvres</a></div>
+    </div>
+    <figure class="s-hero-img">${img(pick(1, 3), "Haut-relief sculpté par Eric Picard", { eager: true, full: true })}</figure>
+  </div>
+</section>
+<div class="wrap">
+  <section class="series">
+    <div class="series-head"><h2 data-reveal>Ce que l’on peut <em>commander</em></h2></div>
+    <div class="kinds">
+      ${KINDS.map(([t, d, im, id], i) => `
+      <a class="kind" href="/sculptures/#${id}" data-reveal data-cursor="Voir">
+        <div class="kind-img">${im ? img(im, `${t} — sculpture d’Eric Picard`) : ""}</div>
+        <span class="series-num">${String(i + 1).padStart(2, "0")}</span>
+        <h3>${esc(t)}</h3>
+        <p>${esc(d)}</p>
+      </a>`).join("")}
+    </div>
+  </section>
+  <section class="series">
+    <div class="series-head"><h2 data-reveal>Comment ça <em>se passe</em></h2></div>
+    <ol class="steps steps-4">${STEPS.map(([t, d], i) => `<li data-reveal><span>${String(i + 1).padStart(2, "0")}</span><h3>${esc(t)}</h3><p>${esc(d)}</p></li>`).join("")}</ol>
+  </section>
+  <section class="series">
+    <div class="series-head"><h2 data-reveal>Questions <em>fréquentes</em></h2></div>
+    <div class="faq">${FAQ.map(([q, a]) => `<details data-reveal><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}</div>
+  </section>
+  <section class="series sculpt-cta" data-reveal>
+    <h2>Parlons de <em>votre œuvre</em></h2>
+    <p>Décrivez votre idée en quelques lignes — le lieu, le format, ce qui vous touche. Eric Picard vous répondra personnellement.</p>
+    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
+  </section>
+</div>
+<div style="height:clamp(60px,8vw,120px)"></div>`;
+  pages.set("/sculpture-sur-commande/", layout({
+    title: "Sculpture sur commande à Lyon | Eric Picard, sculpteur",
+    description: "Sculptures sur commande par Eric Picard, sculpteur et architecte D.P.L.G à Lyon : pièces à poser, hauts-reliefs, pièces murales. Devis personnalisé.",
+    path: "/sculpture-sur-commande/",
+    header: "night",
+    bodyClass: "night",
+    image: pick(1, 3)?.src,
+    body,
+    jsonld: [
+      crumbsLd([["Accueil", "/"], ["Sculptures", "/sculptures/"], ["Sculpture sur commande", "/sculpture-sur-commande/"]]),
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: "Sculpture sur commande",
+        serviceType: "Sculpture sur commande",
+        description: "Pièces à poser, hauts-reliefs et pièces murales réalisés sur commande par Eric Picard, sculpteur à Lyon.",
+        provider: { ...personLd, jobTitle: "Architecte D.P.L.G et sculpteur" },
+        areaServed: "France",
+        url: abs("/sculpture-sur-commande/"),
+      },
+    ],
   }));
 }
 
@@ -881,7 +965,7 @@ const absMedia = (u) => { const m = media(u); return m.startsWith("http") ? m : 
 const pageImages = (u) => {
   const p = projects.find((x) => x.url === u);
   if (p) return [p.cover, ...p.images.filter((im) => im !== p.cover)].filter(Boolean).slice(0, 12).map((im) => [absMedia(im.src), p.title]);
-  if (u === "/sculptures/") return series.flatMap((x) => x.images.slice(0, 6).map((im) => [absMedia(im.src), `Sculpture d’Eric Picard, série ${x.title}`]));
+  if (u === "/sculptures/") return series.flatMap((x) => x.images.map((im) => [absMedia(im.src), `Sculpture d’Eric Picard, série ${x.title}`]));
   if (u === "/") return featured.slice(0, 6).map((x) => [absMedia(x.cover.src), x.title]);
   return [];
 };
