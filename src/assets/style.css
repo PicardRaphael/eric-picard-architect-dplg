@@ -256,6 +256,9 @@ p { margin: 0 0 1.1em; }
 .drawing-right { top: 4%; right: -6%; width: min(62vw, 980px); aspect-ratio: 4 / 3; -webkit-mask-image: radial-gradient(closest-side, #000 40%, transparent); mask-image: radial-gradient(closest-side, #000 40%, transparent); }
 .drawing-left { bottom: -4%; left: -8%; width: min(56vw, 860px); aspect-ratio: 4 / 3; -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent); mask-image: radial-gradient(closest-side, #000 35%, transparent); }
 .section > .wrap, .section-tight > .wrap { position: relative; z-index: 1; }
+/* Les dessins en filigrane et les numéros décalés ne doivent jamais élargir la page (mobile) */
+.section, .section-tight, .page-head { overflow-x: clip; }
+html, body { overflow-x: clip; }
 
 /* ---------- Intro / manifeste ---------- */
 .intro { display: grid; grid-template-columns: minmax(160px, 3fr) 9fr; gap: 32px; }
@@ -298,7 +301,7 @@ p { margin: 0 0 1.1em; }
   .show { display: block; margin-bottom: 88px; }
   .show-media, .show.show-r .show-media { aspect-ratio: 4 / 3.4; }
   .show-text { margin-top: -54px; padding: 0 0 0 4px; }
-  .show-num { font-size: 96px; margin-bottom: 8px; }
+  .show-num, .show.show-r .show-num { font-size: 96px; margin: 0 0 8px; text-align: left; }
   .show h3, .show.show-r h3 { margin: 6px 0 0; }
 }
 
