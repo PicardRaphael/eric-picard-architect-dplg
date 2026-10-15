@@ -684,8 +684,9 @@ body.night { background: var(--night); }
 @media (max-width: 760px) {
   /* Mobile : largeur fixe, hauteur selon le format → aucune œuvre coupée */
   .rail { align-items: center; cursor: auto; }
-  .rail button { height: auto; width: 76vw; max-height: 64vh; display: grid; place-items: center; }
-  .rail img { width: 100%; height: auto; max-height: 64vh; }
+  .rail { align-items: stretch; }
+  .rail button { height: 50vh; width: auto; max-width: 86vw; display: grid; place-items: center; }
+  .rail img { height: 100%; width: auto; max-width: 86vw; object-fit: contain; }
   .series-tools .rail-btn { display: none; }
   .rail-progress { max-width: none; }
 }
