@@ -21,7 +21,7 @@ if (header) {
 const callBar = document.querySelector(".call-bar");
 if (callBar) {
   const threshold = () => (document.querySelector(".hero, .p-hero")?.offsetHeight ?? 300) * 0.7;
-  const onScrollBar = () => callBar.classList.toggle("show", scrollY > threshold());
+  const onScrollBar = () => callBar.classList.toggle("is-visible", scrollY > threshold());
   addEventListener("scroll", onScrollBar, { passive: true });
   onScrollBar();
 }
@@ -29,7 +29,7 @@ if (callBar) {
 /* Retour en haut */
 const toTop = document.querySelector(".to-top");
 if (toTop) {
-  const onScrollTop = () => toTop.classList.toggle("show", scrollY > innerHeight * 1.5);
+  const onScrollTop = () => toTop.classList.toggle("is-visible", scrollY > innerHeight * 1.5);
   addEventListener("scroll", onScrollTop, { passive: true });
   onScrollTop();
   toTop.addEventListener("click", () => scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }));
@@ -38,8 +38,55 @@ if (toTop) {
 /* Sculptures : bandes horizontales, plein écran, série active dans la barre */
 document.querySelectorAll(".rail-btn").forEach((b) => b.addEventListener("click", () => {
   const rail = document.getElementById("rail-" + b.dataset.rail);
-  rail?.scrollBy({ left: Number(b.dataset.dir) * rail.clientWidth * 0.8, behavior: reduceMotion ? "auto" : "smooth" });
+  rail?.scrollBy({ left: Number(b.dataset.dir) * rail.clientWidth * 0.7, behavior: reduceMotion ? "auto" : "smooth" });
 }));
+document.querySelectorAll(".rail").forEach((rail) => {
+  const id = rail.id.replace("rail-", "");
+  const bar = document.querySelector(`[data-rail-bar="${id}"]`);
+  const count = document.querySelector(`[data-rail-count="${id}"]`);
+  const hint = rail.closest(".series")?.querySelector(".rail-hint");
+  const wrap = rail.parentElement;
+  const [prev, next] = document.querySelectorAll(`.rail-btn[data-rail="${id}"]`);
+  const items = [...rail.children];
+  const total = String(items.length).padStart(2, "0");
+  // Barre de progression, compteur, état des flèches
+  const update = () => {
+    const max = rail.scrollWidth - rail.clientWidth;
+    const ratio = max > 0 ? rail.scrollLeft / max : 1;
+    const visible = rail.clientWidth / rail.scrollWidth;
+    if (bar) { bar.style.width = Math.max(8, visible * 100) + "%"; bar.style.transform = `translateX(${ratio * (1 / Math.max(visible, .08) - 1) * 100}%)`; }
+    const left = rail.getBoundingClientRect().left;
+    const idx = Math.max(0, items.findIndex((el) => el.getBoundingClientRect().right > left + 20));
+    if (count) count.textContent = String(idx + 1).padStart(2, "0") + " / " + total;
+    if (prev) prev.disabled = rail.scrollLeft < 4;
+    if (next) next.disabled = rail.scrollLeft > max - 4;
+    wrap.classList.toggle("at-end", rail.scrollLeft > max - 4);
+    if (rail.scrollLeft > 30) hint?.classList.add("gone");
+  };
+  rail.addEventListener("scroll", () => requestAnimationFrame(update), { passive: true });
+  addEventListener("resize", update);
+  rail.querySelectorAll("img").forEach((im) => im.addEventListener("load", update, { once: true }));
+  update();
+  // Glisser à la souris (le tactile défile nativement)
+  let startX = 0, startLeft = 0, moved = false, down = false;
+  rail.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    down = true; moved = false; startX = e.clientX; startLeft = rail.scrollLeft;
+  });
+  addEventListener("pointermove", (e) => {
+    if (!down) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 6) { moved = true; rail.classList.add("dragging"); }
+    if (moved) rail.scrollLeft = startLeft - dx;
+  });
+  addEventListener("pointerup", () => {
+    if (!down) return;
+    down = false;
+    // Laisse passer le clic d'après si on a vraiment glissé (ne pas ouvrir la visionneuse)
+    setTimeout(() => rail.classList.remove("dragging"), 0);
+  });
+  rail.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+});
 document.querySelectorAll("[data-lb-open]").forEach((b) => b.addEventListener("click", () => {
   document.querySelector(`[data-lb="${b.dataset.lbOpen}"]`)?.click();
 }));

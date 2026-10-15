@@ -26,7 +26,13 @@
     ],
     "hero": "img_7325-copie",
     "showcase": 3,
-    "carousel": 2
+    "carousel": 2,
+    "features": [
+      "img_7319",
+      "img_7633",
+      "img_7637",
+      "img_7644"
+    ]
   },
   {
     "slug": "maison-contemporaine-annecy-le-vieux",

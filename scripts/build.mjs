@@ -19,6 +19,12 @@ const usedMedia = new Set();
 const site = JSON.parse(await readFile(join(ROOT, "content/site.json"), "utf8"));
 const projects = JSON.parse(await readFile(join(ROOT, "content/projects.json"), "utf8"));
 const raw = JSON.parse(await readFile(join(ROOT, "content/raw.json"), "utf8"));
+// Dimensions réelles des images (scripts/dims.mjs) : width/height réservent la place avant chargement.
+const dims = JSON.parse(await readFile(join(ROOT, "content/dims.json"), "utf8").catch(() => "{}"));
+const sizeOf = (url) => {
+  const d = dims[url.replace(OLD_ORIGIN + "/images/", "")];
+  return d ? `width="${d[0]}" height="${d[1]}"` : "";
+};
 const YEAR = new Date().getFullYear();
 
 /* ---------- Utilitaires ---------- */
@@ -148,7 +154,7 @@ ${body}
   <a href="tel:${site.phoneIntl}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Appeler</a>
   <a href="/contact/#architecture">Écrire</a>
 </nav>
-<button type="button" class="to-top" aria-label="Revenir en haut de la page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
+<button type="button" class="to-top" aria-label="Revenir en haut de la page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
 <script src="/assets/main.js" defer></script>
 </body>
 </html>
@@ -235,10 +241,34 @@ const ctaBlock = ({ onContact = false } = {}) => `
 
 const img = (im, alt, { eager = false, full = false, lazy = true } = {}) => {
   const load = eager ? 'fetchpriority="high"' : lazy ? 'loading="lazy"' : "";
-  const tag = `<img src="${esc(media(full ? im.src : im.md))}" alt="${esc(alt)}" ${load} decoding="async">`;
+  const tag = `<img src="${esc(media(full ? im.src : im.md))}" ${sizeOf(full ? im.src : im.md)} alt="${esc(alt)}" ${load} decoding="async">`;
   const webp = full ? im.webp : im.webpMd;
   return webp ? `<picture><source srcset="${esc(media(webp))}" type="image/webp">${tag}</picture>` : tag;
 };
+
+// Série en bande horizontale : un seul composant pour les sculptures et les dossiers de recherche.
+const railSection = ({ id, num, titleHtml, countLabel, images, cap, alt }) => `
+  <section class="series" id="${id}">
+    <div class="series-head">
+      <h2 data-reveal>${num ? `<span class="series-num">${num}</span>` : ""}${titleHtml}</h2>
+      <div class="series-tools">
+        <span>${countLabel}</span>
+        <button type="button" class="rail-btn" data-rail="${id}" data-dir="-1" aria-label="Précédent"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M22 6H2M7 1L2 6l5 5"/></svg></button>
+        <button type="button" class="rail-btn" data-rail="${id}" data-dir="1" aria-label="Suivant">${arrow}</button>
+        <button type="button" class="btn btn-ghost" data-lb-open="${id}">Plein écran</button>
+      </div>
+    </div>
+    <div class="rail-wrap">
+      <div class="rail" id="rail-${id}" tabindex="0" role="region" aria-label="${esc(alt)} : faire défiler horizontalement">
+        ${images.map((im, k) => `<button type="button" data-lb="${id}" data-full="${esc(media(im.src))}" data-cap="${esc(cap)} — ${k + 1} / ${images.length}" data-cursor="Voir" aria-label="Agrandir ${k + 1}">${img(im, `${alt} — ${k + 1}`, { lazy: k >= 4 })}</button>`).join("")}
+      </div>
+    </div>
+    <div class="rail-foot" aria-hidden="true">
+      <span class="rail-count" data-rail-count="${id}">01 / ${String(images.length).padStart(2, "0")}</span>
+      <span class="rail-progress"><i data-rail-bar="${id}"></i></span>
+      <span class="rail-hint">Faites défiler <svg width="26" height="12" viewBox="0 0 26 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M0 6h24M19 1l5 5-5 5"/></svg></span>
+    </div>
+  </section>`;
 
 const card = (p, tag = "h2") => `
 <a class="card" href="${p.url}" data-reveal>
@@ -268,11 +298,11 @@ const yMax = Math.max(...yearsAll);
   if (sculptSlide) heroItems.splice(2, 0, sculptSlide);
   const slides = heroItems.map((p, i) => `
     <div class="hero-slide${i === 0 ? " active" : ""}" data-href="${p.url}" data-title="${esc(p.short)}">
-      <img ${i === 0 ? `src="${esc(media(p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.src))}"`} alt="${esc(p.title + " — " + p.commune)}">
+      <img ${i === 0 ? `src="${esc(media(p.cover.src))}" fetchpriority="high"` : `data-src="${esc(media(p.cover.src))}"`} ${sizeOf(p.cover.src)} alt="${esc(p.title + " — " + p.commune)}">
     </div>`).join("");
   // Les dessins de l'architecte (dossier de l'Espace de la fête), en filigrane derrière les sections.
   const drawing = (name) => (raw["dossier-plans.html"].images ?? []).find((im) => im.src.includes(name));
-  const texture = (im, cls) => (im ? `<div class="drawing ${cls}" aria-hidden="true"><img src="${esc(media(im.md))}" alt="" loading="lazy" decoding="async"></div>` : "");
+  const texture = (im, cls) => (im ? `<div class="drawing ${cls}" aria-hidden="true"><img src="${esc(media(im.md))}" ${sizeOf(im.md)} alt="" loading="lazy" decoding="async"></div>` : "");
   // Vitrine : 5 projets, un par typologie (champ « showcase » de projects.json) ; le carrousel garde les 6 premiers « featured ».
   const showcase = projects.filter((p) => p.showcase).sort((a, b) => a.showcase - b.showcase);
   const shows = showcase.map((p, i) => `
@@ -468,8 +498,23 @@ ordered.forEach((p, i) => {
   ].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${k === "Typologie" ? v : esc(v)}</dd></div>`).join("");
   const [first, ...rest] = p.text;
   const crumbItems = [["Accueil", "/"], ["Projets", "/projets/"], [cat.label, `/projets/${cat.id}/`], [p.short, p.url]];
-  const gallery = p.images.map((im, n) =>
-    `<button type="button" data-lb="p" data-full="${esc(media(im.src))}" data-cap="${esc(p.title)}" aria-label="Agrandir l’image ${n + 1}">${img(im, `${p.title}, ${p.commune} — vue ${n + 1}`)}</button>`).join("");
+  // Galerie éditoriale : 4 grandes images mises en scène (large, paire, large), puis une planche de vignettes.
+  // Toutes ouvrent la même visionneuse, dans l'ordre.
+  // Images mises en avant : celles choisies dans projects.json (« features »), sinon les premières.
+  const picked = (p.features ?? []).map((k) => p.images.find((im) => im !== p.cover && im.src.includes(k))).filter(Boolean);
+  const shots = [...picked, ...p.images.filter((im) => im !== p.cover && !picked.includes(im))];
+  const lbBtn = (im, n, inner, cls = "") =>
+    `<button type="button" class="${cls}" data-lb="p" data-full="${esc(media(im.src))}" data-cap="${esc(p.title)} — ${n + 1} / ${shots.length}" data-cursor="Voir" aria-label="Agrandir l’image ${n + 1}">${inner}</button>`;
+  const alt = (n) => `${p.title}, ${p.commune} — vue ${n + 1}`;
+  const feat = shots.slice(0, 4);
+  const blocks = [];
+  if (feat[0]) blocks.push(`<div class="f-wide" data-reveal>${lbBtn(feat[0], 0, img(feat[0], alt(0), { full: true }))}</div>`);
+  if (feat[1]) blocks.push(`<div class="f-pair">${feat.slice(1, 3).map((im, k) => `<div data-reveal>${lbBtn(im, k + 1, img(im, alt(k + 1), { full: true }))}</div>`).join("")}</div>`);
+  if (feat[3]) blocks.push(`<div class="f-wide" data-reveal>${lbBtn(feat[3], 3, img(feat[3], alt(3), { full: true }))}</div>`);
+  const sheet = shots.slice(4).map((im, k) => lbBtn(im, k + 4, img(im, alt(k + 4)), "thumb")).join("");
+  const gallery = blocks.length
+    ? `<section class="p-gallery" aria-label="Galerie">${blocks.join("")}${sheet ? `<div class="sheet-head"><h2>Toutes les images</h2><span>${shots.length} vues</span></div><div class="sheet">${sheet}</div>` : ""}</section>`
+    : "";
   const videos = p.videos.map((v) => `
     <figure class="video" data-reveal>
       <video controls preload="none" playsinline ${v.poster ? `poster="${esc(media(v.poster))}"` : ""}><source src="${esc(media(v.src))}" type="video/mp4"></video>
@@ -493,7 +538,7 @@ ordered.forEach((p, i) => {
     </div>
   </div>
   ${videos ? `<div class="videos">${videos}</div>` : ""}
-  ${gallery ? `<h2 class="visually-hidden">Galerie</h2><div class="gallery">${gallery}</div>` : ""}
+  ${gallery}
   <aside class="p-cta" data-reveal>
     <div>
       <p class="eyebrow"><b>—</b> ${esc(cat.label)}</p>
@@ -561,24 +606,13 @@ ordered.forEach((p, i) => {
   <div class="wrap">${series.map((s, n) => `<a class="chip" href="#${s.id}"><b>${String(n + 1).padStart(2, "0")}</b> ${esc(s.title)} <sup>${s.images.length}</sup></a>`).join("")}</div>
 </nav>
 <div class="wrap">
-  ${series.map((s, n) => `
-  <section class="series" id="${s.id}">
-    <div class="series-head">
-      <h2 data-reveal><span class="series-num">${String(n + 1).padStart(2, "0")}</span>${esc(s.title)}</h2>
-      <div class="series-tools">
-        <span>${s.images.length} œuvres</span>
-        <button type="button" class="rail-btn" data-rail="${s.id}" data-dir="-1" aria-label="Œuvres précédentes"><svg width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M22 6H2M7 1L2 6l5 5"/></svg></button>
-        <button type="button" class="rail-btn" data-rail="${s.id}" data-dir="1" aria-label="Œuvres suivantes">${arrow}</button>
-        <button type="button" class="btn btn-ghost" data-lb-open="${s.id}">Plein écran</button>
-      </div>
-    </div>
-    <div class="rail" id="rail-${s.id}" tabindex="0" role="region" aria-label="Série ${esc(s.title)} : faire défiler horizontalement">
-      ${s.images.map((im, k) => `<button type="button" data-lb="${s.id}" data-full="${esc(media(im.src))}" data-cap="${esc(s.title)} — ${k + 1} / ${s.images.length}" data-cursor="Voir" aria-label="Agrandir l’œuvre ${k + 1}">${img(im, `Sculpture d’Eric Picard, série ${s.title} — ${k + 1}`)}</button>`).join("")}
-    </div>
-  </section>`).join("")}
+  ${series.map((s, n) => railSection({
+    id: s.id, num: String(n + 1).padStart(2, "0"), titleHtml: esc(s.title), countLabel: `${s.images.length} œuvres`,
+    images: s.images, cap: s.title, alt: `Sculpture d’Eric Picard, série ${s.title}`,
+  })).join("")}
   <section class="series sculpt-cta" data-reveal>
     <h2>Acquérir une œuvre, <em>passer commande</em></h2>
-    <p>Certaines pièces sont disponibles ; d’autres peuvent être réalisées sur commande. Écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent.</p>
+    <p>Pièces existantes ou sculptures sur commande : écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent, il vous répondra sur les disponibilités.</p>
     <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
   </section>
 </div>
@@ -600,32 +634,43 @@ ordered.forEach((p, i) => {
   const plans = (raw["dossier-plans.html"].images ?? []).filter((im) => !/image-collee|article/.test(im.src));
   const histo = raw["Livre/dossier-historique.html"].images ?? [];
   const article = (raw["dossier-plans.html"].images ?? []).find((im) => /article/.test(im.src));
-  const gal = (list, g, label) => list.map((im, k) => `<button type="button" data-lb="${g}" data-full="${esc(media(im.src))}" data-cap="${esc(label)}" aria-label="Agrandir la planche ${k + 1}">${img(im, `${label} — planche ${k + 1}`)}</button>`).join("");
+  const cover = histo[0] ?? plans[0];
   const body = `
-<section class="page-head">
-  <div class="wrap">
-    ${crumbs([["Accueil", "/"], ["Recherches", "/recherches/"]])}
-    <h1>L’espace <em>de la fête</em></h1>
-    <p class="intro-text">Utopie ou réalité ? Un essai de définition et de représentation de l’espace de la fête : sujet de diplôme, lauréat de la Société Académique d’Architecture de Lyon.</p>
+<section class="s-hero">
+  <div class="wrap s-hero-grid">
+    <div class="s-hero-copy">
+      ${crumbs([["Accueil", "/"], ["Recherches", "/recherches/"]])}
+      <p class="eyebrow"><b>—</b> Recherches · Projet de diplôme</p>
+      <h1>L’espace <em>de la fête</em></h1>
+      <p class="intro-text">Utopie ou réalité ? Un essai de définition et de représentation de l’espace de la fête : une architecture organique sur les berges du Rhône — forum, belvédère, espaces nautiques. Sujet de diplôme, ce travail a reçu le Grand Prix de la Société Académique d’Architecture de Lyon.</p>
+      <div class="cta-actions"><a class="btn btn-light" href="#plans">Voir les planches</a><a class="btn btn-ghost-light" href="#historique">Le dossier historique</a></div>
+    </div>
+    <figure class="s-hero-img s-hero-paper">${img(cover, "L’espace de la fête — dessin d’Eric Picard", { eager: true, full: true })}</figure>
   </div>
 </section>
+<nav class="series-bar" aria-label="Dossiers">
+  <div class="wrap"><a class="chip" href="#plans"><b>01</b> Le dossier de plans <sup>${plans.length}</sup></a><a class="chip" href="#historique"><b>02</b> Le dossier historique <sup>${histo.length}</sup></a>${article ? `<a class="chip" href="#presse"><b>03</b> Dans la presse</a>` : ""}</div>
+</nav>
 <div class="wrap">
-  <div class="split" style="padding-bottom:clamp(56px,8vw,110px)">
-    <div class="prose" data-reveal>
-      <p>Une architecture organique, pensée pour accueillir la fête. Le projet retrace d’abord l’histoire de la fête à travers les époques, puis en propose une représentation spatiale, sur les berges du Rhône : forum, belvédère, espaces nautiques.</p>
-      <p>Sujet de diplôme, ce travail a reçu le Grand Prix de la Société Académique d’Architecture de Lyon.</p>
-      <p>Il attend toujours son mécène.</p>
+  ${railSection({ id: "plans", num: "01", titleHtml: "Le dossier <em>de plans</em>", countLabel: `${plans.length} planches`, images: plans, cap: "L’espace de la fête — dossier de plans", alt: "L’espace de la fête, dossier de plans, planche" })}
+  ${railSection({ id: "historique", num: "02", titleHtml: "Le dossier <em>historique</em>", countLabel: `${histo.length} feuillets`, images: histo, cap: "L’espace de la fête — dossier historique", alt: "L’espace de la fête, dossier historique, feuillet" })}
+  ${article ? `<section class="series" id="presse">
+    <div class="split">
+      <div data-reveal>
+        <h2 class="press-title"><span class="series-num">03</span>Dans la <em>presse</em></h2>
+        <p class="press-text">Une architecture organique pensée pour accueillir la fête — un projet qui attend toujours son mécène.</p>
+      </div>
+      <div data-reveal><button type="button" class="map-link" data-lb="article" data-full="${esc(media(article.src))}" data-cap="Article de presse" data-cursor="Lire" aria-label="Agrandir l’article">${img(article, "Article de presse consacré au projet")}</button></div>
     </div>
-    ${article ? `<div data-reveal><button type="button" class="map-link" data-lb="article" data-full="${esc(media(article.src))}" data-cap="Article de presse" aria-label="Agrandir l’article">${img(article, "Article de presse consacré au projet")}</button></div>` : ""}
-  </div>
-  <section class="series" style="border-color:var(--line)"><div class="series-head"><h2 data-reveal>Le dossier de plans</h2><span>${plans.length} planches</span></div><div class="gallery">${gal(plans, "plans", "L’espace de la fête — dossier de plans")}</div></section>
-  <section class="series" style="border-color:var(--line)"><div class="series-head"><h2 data-reveal>Le dossier <em>historique</em></h2><span>${histo.length} feuillets</span></div><div class="gallery">${gal(histo, "histo", "L’espace de la fête — dossier historique")}</div></section>
+  </section>` : ""}
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
   pages.set("/recherches/", layout({
     title: "L’espace de la fête — Recherches | Eric Picard, architecte",
     description: "Essai de définition et de représentation de l’espace de la fête : une architecture organique sur les berges du Rhône, lauréate de la Société Académique d’Architecture de Lyon.",
     path: "/recherches/",
+    header: "night",
+    bodyClass: "night",
     image: plans[0]?.src,
     body,
     jsonld: [crumbsLd([["Accueil", "/"], ["Recherches", "/recherches/"]])],
@@ -715,7 +760,7 @@ pages.set("/mentions-legales/", layout({
   <div class="prose">
     <h2>Éditeur</h2>
     <p>${esc(site.studio)} — Eric Picard, architecte D.P.L.G<br>${esc(site.street)}, ${site.postalCode} ${site.locality}<br>Téléphone : ${site.phone} — E-mail : <a href="mailto:${site.email}">${site.email}</a><br>Directeur de la publication : Eric Picard.</p>
-    <p><!-- À COMPLÉTER : n° d'inscription à l'Ordre des architectes, SIRET --></p>
+    <p>Inscription à l’Ordre des architectes et SIRET : informations en cours de mise à jour.</p>
     <h2>Hébergement</h2>
     <p>OVH SAS — 2, rue Kellermann, 59100 Roubaix, France.</p>
     <h2>Propriété intellectuelle</h2>

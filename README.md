@@ -13,6 +13,7 @@ scripts/crawl.mjs         relit l'ancien site → content/raw.json
 scripts/build.mjs         génère le site (dév., validation ou production)
 scripts/fetch-media.mjs   copie les médias de l'ancien site dans media/
 scripts/check.mjs         vérifie liens, images, title/description/h1
+scripts/dims.mjs          mesure les images de media/ → content/dims.json (width/height)
 scripts/serve.mjs         serveur local de prévisualisation
 ```
 
@@ -77,6 +78,16 @@ le nouveau site ne les utilise plus, et le `.htaccess` redirige les anciennes ad
 garder une copie de `media/` (disque externe, Drive…) : c'est la seule source des photos.
 
 ## Reste à compléter
+
+À demander à Eric Picard (chaque réponse débloque une amélioration) :
+1. **Confirmer** la commune de la résidence seniors (Craponne ou Lyon ?) et l'intitulé exact des distinctions
+   → corriger `content/projects.json` et `content/site.json`.
+2. **Fiches des 15–20 plus belles sculptures** (titre, matière, dimensions, année, disponible / vendue / sur commande)
+   → légendes nommées, page Sculptures « catalogue », meilleur référencement des œuvres.
+3. **N° d'inscription à l'Ordre des architectes et SIRET** → mentions légales complètes (obligatoire).
+4. **Quelques phrases** sur Megève, Saint-Raphaël, Oullins, Septème, Mions → fiches moins courtes, mieux classées.
+5. **Choisir les 4 plus belles photos** des projets mis en avant → champ `features` dans `content/projects.json`.
+
 
 - Mentions légales : n° d'inscription à l'Ordre des architectes et SIRET (`scripts/build.mjs`, page mentions légales).
 - Projets publics, collectifs, lotissements et maisons groupées : pour l'instant, lien vers l'ancien site 2020.
