@@ -76,7 +76,8 @@ p { margin: 0 0 1.1em; }
   transition: background .5s var(--ease), border-color .5s, transform .5s var(--ease);
   border-bottom: 1px solid transparent;
 }
-.site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 80px; gap: 24px; }
+.site-header .wrap { display: flex; align-items: center; justify-content: space-between; height: 80px; gap: 24px; transition: height .4s var(--ease); }
+.site-header.scrolled .wrap { height: 64px; }
 .brand { display: flex; align-items: baseline; gap: 14px; white-space: nowrap; }
 .brand-name { font: 400 28px/1 var(--serif); letter-spacing: -.01em; }
 .brand-name i { color: var(--accent); font-style: normal; }
@@ -96,7 +97,16 @@ p { margin: 0 0 1.1em; }
   background: rgba(14, 14, 13, .78); border-bottom-color: var(--line);
   backdrop-filter: saturate(1.3) blur(16px); -webkit-backdrop-filter: saturate(1.3) blur(16px);
 }
-.site-header.hidden { transform: translateY(-100%); }
+/* Barre toujours visible ; sur une fiche projet, elle rappelle le projet en cours et propose le contact */
+.h-context { display: none; align-items: center; gap: 14px; font: 400 20px/1 var(--serif); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw; }
+.h-context::before { content: ""; width: 1px; height: 20px; background: var(--line-2); flex: none; }
+.site-header.scrolled .h-context { display: inline-flex; }
+.site-header.scrolled .brand:has(.h-context) .brand-tag { display: none; }
+.h-cta { display: none; flex: none; padding: 10px 18px; border-radius: 999px; background: var(--accent); color: #fff; font: 500 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; transition: background .3s; }
+.h-cta:hover { background: #b3311f; }
+.site-header.scrolled .h-cta { display: inline-flex; }
+@media (max-width: 1320px) { .site-header.scrolled .h-cta { display: none; } }
+@media (max-width: 900px) { .h-context { max-width: 46vw; font-size: 17px; } }
 
 @media (max-width: 900px) {
   .brand-tag { display: none; }
@@ -550,7 +560,7 @@ p { margin: 0 0 1.1em; }
 .p-hero .place { margin-top: 22px; font: 500 12px/1.4 var(--sans); letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.8); }
 .p-body { display: grid; grid-template-columns: 4fr 8fr; gap: clamp(32px, 6vw, 110px); padding: clamp(80px, 10vw, 150px) 0; }
 /* Cartouche, comme sur un plan */
-.fiche { position: sticky; top: 112px; align-self: start; border: 1px solid var(--line-2); }
+.fiche { position: sticky; top: 96px; align-self: start; border: 1px solid var(--line-2); }
 .fiche > .eyebrow { margin: 0 !important; padding: 14px 18px; border-bottom: 1px solid var(--line-2); display: flex; justify-content: space-between; }
 .fiche > .eyebrow::after { content: "EP"; font-family: var(--serif); letter-spacing: 0; font-size: 15px; color: var(--accent); text-transform: none; }
 .fiche dl { margin: 0; }
@@ -630,14 +640,14 @@ body.night { background: var(--night); }
 .press-text { margin-top: 24px; max-width: 40ch; color: var(--ink-2); font-size: 18px; }
 
 /* Barre des séries, collante */
-.series-bar { position: sticky; top: 0; z-index: 30; background: rgba(10,10,9,.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-block: 1px solid var(--line); }
+.series-bar { position: sticky; top: 64px; z-index: 30; background: rgba(10,10,9,.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-block: 1px solid var(--line); }
 .series-bar .wrap { display: flex; gap: 8px; padding-top: 12px; padding-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
 .series-bar .wrap::-webkit-scrollbar { display: none; }
 .series-bar .chip { flex: none; }
 .series-bar .chip b { font-weight: 500; color: var(--accent); font-size: 11px; letter-spacing: .1em; }
 .series-bar .chip[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .series-bar .chip[aria-current="true"] sup { color: inherit; opacity: .6; }
-.series { scroll-margin-top: 70px; }
+.series { scroll-margin-top: 140px; }
 .series-head { flex-wrap: wrap; align-items: end; }
 .series-num { display: inline-block; font: 500 13px/1 var(--sans); letter-spacing: .12em; color: var(--accent); vertical-align: top; margin-right: 14px; transform: translateY(.8em); }
 .series-tools { display: flex; align-items: center; gap: 10px; }

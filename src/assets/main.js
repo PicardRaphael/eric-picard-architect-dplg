@@ -10,7 +10,6 @@ if (header) {
   const onScroll = () => {
     const y = scrollY;
     header.classList.toggle("scrolled", y > 40);
-    header.classList.toggle("hidden", y > 400 && y > lastY && !document.body.classList.contains("menu-open"));
     lastY = y;
   };
   addEventListener("scroll", onScroll, { passive: true });

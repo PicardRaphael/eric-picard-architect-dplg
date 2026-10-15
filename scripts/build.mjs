@@ -87,7 +87,7 @@ const NAV = [
   ["/contact/", "Contact"],
 ];
 
-function layout({ title, description, path, body, header = "solid", bodyClass = "", image, jsonld = [], noindex = false }) {
+function layout({ title, description, path, body, header = "solid", bodyClass = "", image, jsonld = [], noindex = false, context = "" }) {
   const ogImage = image ? media(image) : media(featured[0].cover.src);
   const ogAbs = ogImage.startsWith("http") ? ogImage : abs(ogImage);
   const nav = NAV.map(([href, label]) => `<a href="${href}"${path.startsWith(href) ? ' aria-current="page"' : ""}>${label}</a>`).join("");
@@ -118,9 +118,10 @@ ${jsonld.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</sc
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header class="site-header ${header}">
   <div class="wrap">
-    <a class="brand" href="/" aria-label="Eric Picard, architecte — accueil"><span class="brand-name">Eric Picard<i>.</i></span><span class="brand-tag">Architecte D.P.L.G & sculpteur — Lyon</span></a>
+    <a class="brand" href="/" aria-label="Eric Picard, architecte — accueil"><span class="brand-name">Eric Picard<i>.</i></span><span class="brand-tag">Architecte D.P.L.G & sculpteur — Lyon</span>${context ? `<span class="h-context">${esc(context)}</span>` : ""}</a>
     <button class="menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span><span></span></button>
     <nav class="nav" id="nav" aria-label="Navigation principale">${nav}</nav>
+    ${context ? `<a class="h-cta" href="/contact/#architecture">Parlons-en</a>` : ""}
   </div>
 </header>
 <main id="contenu">
@@ -571,6 +572,7 @@ ordered.forEach((p, i) => {
     description: p.description,
     path: p.url,
     header: "on-dark",
+    context: p.short,
     image: p.cover?.src,
     body,
     jsonld: [
