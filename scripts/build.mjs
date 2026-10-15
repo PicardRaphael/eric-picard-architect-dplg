@@ -237,7 +237,7 @@ const ctaBlock = ({ onContact = false } = {}) => `
     <p>Acquisition d’une pièce existante ou sculpture sur commande : écrivez en précisant l’œuvre qui vous intéresse.</p>
     ${onContact ? mailBox("Écrire au sculpteur") : ""}
     <div class="cta-actions">
-      ${onContact ? `<a class="btn btn-light" href="tel:${site.phoneIntl}">${site.phone}</a>` : `<a class="btn btn-light" href="${mailSculpt}">Acquérir ou commander</a>`}
+      ${onContact ? `<a class="btn btn-light" href="/sculpture-sur-commande/">Commander une sculpture</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a>` : `<a class="btn btn-light" href="/sculpture-sur-commande/">Commander une sculpture</a>`}
       <a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a>
     </div>
   </div>
@@ -618,7 +618,7 @@ ordered.forEach((p, i) => {
   <section class="series sculpt-cta" data-reveal>
     <h2>Acquérir une œuvre, <em>passer commande</em></h2>
     <p>Pièces existantes ou sculptures sur commande : écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent, il vous répondra sur les disponibilités.</p>
-    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
+    <div class="cta-actions"><a class="btn btn-light" href="/sculpture-sur-commande/">Sculpture sur commande</a><a class="btn btn-ghost-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
   </section>
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
