@@ -107,6 +107,7 @@ p { margin: 0 0 1.1em; }
 .site-header.scrolled .h-cta { display: inline-flex; }
 @media (max-width: 1320px) { .site-header.scrolled .h-cta { display: none; } }
 @media (max-width: 900px) { .h-context { max-width: 46vw; font-size: 17px; } }
+@media (min-width: 901px) and (max-width: 1299px) { .site-header .h-context, .site-header.scrolled .h-context, .brand-tag { display: none; } }
 
 @media (max-width: 900px) {
   .brand-tag { display: none; }

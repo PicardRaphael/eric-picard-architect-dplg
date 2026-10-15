@@ -90,7 +90,9 @@ const NAV = [
 function layout({ title, description, path, body, header = "solid", bodyClass = "", image, jsonld = [], noindex = false, context = "" }) {
   const ogImage = image ? media(image) : media(featured[0].cover.src);
   const ogAbs = ogImage.startsWith("http") ? ogImage : abs(ogImage);
-  const nav = NAV.map(([href, label]) => `<a href="${href}"${path.startsWith(href) ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+  // « Accueil » en tête du menu sur toutes les pages sauf l'accueil : le retour doit être évident.
+  const navItems = path === "/" ? NAV : [["/", "Accueil"], ...NAV];
+  const nav = navItems.map(([href, label]) => `<a href="${href}"${href !== "/" && path.startsWith(href) ? ' aria-current="page"' : ""}${href === "/" ? ' class="nav-home"' : ""}>${label}</a>`).join("");
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -140,7 +142,7 @@ ${body}
       </div>
       <div>
         <h3>Explorer</h3>
-        <ul>${NAV.map(([h, l]) => `<li><a href="${h}">${l}</a></li>`).join("")}</ul>
+        <ul><li><a href="/">Accueil</a></li>${NAV.map(([h, l]) => `<li><a href="${h}">${l}</a></li>`).join("")}</ul>
       </div>
       <div>
         <h3>Contact</h3>
@@ -148,6 +150,7 @@ ${body}
           <li><a href="mailto:${site.email}">${site.email}</a></li>
           <li><a href="tel:${site.phoneIntl}">${site.phone}</a></li>
           <li><a href="${site.instagram}" rel="noopener">Instagram</a></li>
+          <li><a href="${site.facebook}" rel="noopener">Facebook</a></li>
         </ul>
       </div>
     </div>
@@ -171,7 +174,7 @@ const personLd = {
   "@id": site.url + "/#eric-picard",
   name: site.name,
   jobTitle: "Architecte D.P.L.G et sculpteur",
-  sameAs: [site.instagram],
+  sameAs: [site.instagram, site.facebook],
 };
 const businessLd = {
   "@context": "https://schema.org",
@@ -187,7 +190,7 @@ const businessLd = {
   areaServed: ["Lyon", "Rhône", "Auvergne-Rhône-Alpes"],
   knowsAbout: ["Extension de maison", "Maison contemporaine", "Rénovation d’appartement", "Réhabilitation", "Permis de construire", "Aménagement de commerces", "Accessibilité PMR", "Haute qualité environnementale", "Sculpture"],
   founder: personLd,
-  sameAs: [site.instagram],
+  sameAs: [site.instagram, site.facebook],
 };
 const crumbsLd = (items) => ({
   "@context": "https://schema.org",
@@ -239,7 +242,7 @@ const ctaBlock = ({ onContact = false } = {}) => `
     ${onContact ? mailBox("Écrire au sculpteur") : ""}
     <div class="cta-actions">
       ${onContact ? `<a class="btn btn-light" href="/sculpture-sur-commande/">Commander une sculpture</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a>` : `<a class="btn btn-light" href="/sculpture-sur-commande/">Commander une sculpture</a>`}
-      <a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a>
+      <a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a><a class="btn btn-ghost-light" href="${site.facebook}" rel="noopener">Facebook</a>
     </div>
   </div>
 </div>
@@ -620,7 +623,7 @@ ordered.forEach((p, i) => {
   <section class="series sculpt-cta" data-reveal>
     <h2>Acquérir une œuvre, <em>passer commande</em></h2>
     <p>Pièces existantes ou sculptures sur commande : écrivez à Eric Picard en indiquant la série et l’œuvre qui vous intéressent, il vous répondra sur les disponibilités.</p>
-    <div class="cta-actions"><a class="btn btn-light" href="/sculpture-sur-commande/">Sculpture sur commande</a><a class="btn btn-ghost-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
+    <div class="cta-actions"><a class="btn btn-light" href="/sculpture-sur-commande/">Sculpture sur commande</a><a class="btn btn-ghost-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a><a class="btn btn-ghost-light" href="${site.facebook}" rel="noopener">Facebook</a></div>
   </section>
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
@@ -692,7 +695,7 @@ ordered.forEach((p, i) => {
   <section class="series sculpt-cta" data-reveal>
     <h2>Parlons de <em>votre œuvre</em></h2>
     <p>Décrivez votre idée en quelques lignes — le lieu, le format, ce qui vous touche. Eric Picard vous répondra personnellement.</p>
-    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a></div>
+    <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Écrire au sculpteur</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a><a class="btn btn-ghost-light" href="${site.instagram}" rel="noopener">Instagram</a><a class="btn btn-ghost-light" href="${site.facebook}" rel="noopener">Facebook</a></div>
   </section>
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
@@ -900,6 +903,7 @@ ordered.forEach((p, i) => {
         <div><span class="eyebrow">Téléphone</span><a href="tel:${site.phoneIntl}">${site.phone}</a></div>
         <div><span class="eyebrow">Adresse</span>${esc(site.street)}<br>${site.postalCode} ${site.locality}<br><a href="${osm}" rel="noopener" style="font-size:14px;color:var(--muted)">Voir sur la carte →</a></div>
         <div><span class="eyebrow">Instagram</span><a href="${site.instagram}" rel="noopener">@picardarchitecte</a></div>
+        <div><span class="eyebrow">Facebook</span><a href="${site.facebook}" rel="noopener">picardarchi</a></div>
       </div>
     </div>
     <div data-reveal><a class="map-link" href="${osm}" rel="noopener" aria-label="Localiser l’atelier sur OpenStreetMap">${photo ? img(photo, "Intérieur réalisé par l’atelier à Lyon 4e") : ""}</a></div>

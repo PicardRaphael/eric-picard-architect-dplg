@@ -88,7 +88,7 @@ Mêmes nom, adresse, téléphone, site partout.
 | **Houzz** | Là où les particuliers cherchent un architecte pour leur maison | https://www.houzz.fr → profil professionnel gratuit + 3–4 projets |
 | **PagesJaunes** | Fiche gratuite, bien référencée | https://www.solocal.com → fiche gratuite (refuser les options payantes) |
 | **Instagram** @picardarchitecte | Mettre `https://picard-architecte.fr` dans la bio | Application Instagram |
-| **Facebook** (facultatif) | Page professionnelle gratuite avec le lien | facebook.com |
+| **Facebook** (facebook.com/picardarchi) | Mettre `https://picard-architecte.fr` dans la page « À propos » | Application Facebook |
 
 ---
 
