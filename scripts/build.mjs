@@ -181,7 +181,7 @@ const businessLd = {
   "@type": "ProfessionalService",
   "@id": site.url + "/#atelier",
   name: site.studio,
-  description: "Atelier d’architecture à Lyon : maisons individuelles, extensions, logements collectifs, réhabilitation d’appartements et aménagement de commerces.",
+  description: "Atelier d’architecture et de sculpture à Lyon, à la Croix-Rousse (Lyon 4e) : maisons individuelles, extensions, logements collectifs, réhabilitation d’appartements et aménagement de commerces.",
   url: site.url + "/",
   telephone: site.phoneIntl,
   email: site.email,
@@ -384,7 +384,7 @@ const yMax = Math.max(...yearsAll);
       <p class="eyebrow" data-reveal><b>01</b> — L’atelier</p>
       <div>
         <p class="lead" data-reveal>Des volumes simples, de la lumière, <em>et une écoute attentive de ceux qui habiteront les lieux.</em></p>
-        <p class="lead-sub" data-reveal>Maisons, logements, intérieurs et commerces, conçus depuis l’atelier de la rue d’Austerlitz, à Lyon — de l’esquisse au suivi de chantier.</p>
+        <p class="lead-sub" data-reveal>Maisons, logements, intérieurs et commerces, conçus depuis l’atelier de la rue d’Austerlitz, à la Croix-Rousse (Lyon 4e) — de l’esquisse au suivi de chantier.</p>
         <a class="link-arrow" href="/atelier/" data-reveal>Découvrir l’atelier ${arrow}</a>
       </div>
     </div>
@@ -606,7 +606,7 @@ ordered.forEach((p, i) => {
       ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"]])}
       <p class="eyebrow"><b>—</b> Le sculpteur</p>
       <h1>Et de la <em>sculpture…</em></h1>
-      <p class="intro-text">Sculpteur à Lyon, Eric Picard porte sur la matière le même regard que sur l’architecture : des volumes, de la lumière, le travail de la main. ${sculptureCount} œuvres réunies en quatre séries — la mer, des hauts-reliefs réalisés en Afrique, des pièces murales. Des pièces à acquérir, et des sculptures sur commande.</p>
+      <p class="intro-text">Sculpteur à Lyon, dans son atelier de la Croix-Rousse, Eric Picard porte sur la matière le même regard que sur l’architecture : des volumes, de la lumière, le travail de la main. ${sculptureCount} œuvres réunies en quatre séries — la mer, des hauts-reliefs réalisés en Afrique, des pièces murales. Des pièces à acquérir, et des sculptures sur commande.</p>
       <div class="cta-actions"><a class="btn btn-light" href="/sculpture-sur-commande/">Sculpture sur commande</a><a class="btn btn-ghost-light" href="#${series[0].id}">Découvrir les séries</a></div>
     </div>
     <figure class="s-hero-img">${img(sHero, "Sculpture d’Eric Picard, série Sur la mer", { eager: true, full: true })}</figure>
@@ -628,8 +628,8 @@ ordered.forEach((p, i) => {
 </div>
 <div style="height:clamp(60px,8vw,120px)"></div>`;
   pages.set("/sculptures/", layout({
-    title: "Sculpteur à Lyon — œuvres et commandes | Eric Picard",
-    description: `Eric Picard, sculpteur et architecte D.P.L.G à Lyon : ${sculptureCount} sculptures — pièces marines, hauts-reliefs, pièces murales. Œuvres à acquérir et sculptures sur commande.`,
+    title: "Sculpteur à Lyon, Croix-Rousse — œuvres | Eric Picard",
+    description: `Eric Picard, sculpteur et architecte D.P.L.G à Lyon, Croix-Rousse (4e) : ${sculptureCount} sculptures — pièces marines, hauts-reliefs, pièces murales. Œuvres à acquérir et sculptures sur commande.`,
     path: "/sculptures/",
     header: "night",
     bodyClass: "night",
@@ -665,7 +665,7 @@ ordered.forEach((p, i) => {
       ${crumbs([["Accueil", "/"], ["Sculptures", "/sculptures/"], ["Sculpture sur commande", "/sculpture-sur-commande/"]])}
       <p class="eyebrow"><b>—</b> Le sculpteur</p>
       <h1>Sculpture <em>sur commande</em></h1>
-      <p class="intro-text">Une œuvre pensée pour un lieu, une personne, une histoire. Eric Picard, architecte D.P.L.G et sculpteur à Lyon, réalise des sculptures sur commande : pièces à poser, hauts-reliefs, pièces murales — avec le regard d’un architecte sur l’espace qui les accueillera.</p>
+      <p class="intro-text">Une œuvre pensée pour un lieu, une personne, une histoire. Eric Picard, architecte D.P.L.G et sculpteur installé à la Croix-Rousse (Lyon 4e), réalise des sculptures sur commande : pièces à poser, hauts-reliefs, pièces murales — avec le regard d’un architecte sur l’espace qui les accueillera.</p>
       <div class="cta-actions"><a class="btn btn-light" href="${mailSculpt}">Demander un devis</a><a class="btn btn-ghost-light" href="/sculptures/">Voir les œuvres</a></div>
     </div>
     <figure class="s-hero-img">${img(pick(2, 5), "Sculpture d’Eric Picard", { eager: true, full: true })}</figure>
@@ -805,7 +805,7 @@ ordered.forEach((p, i) => {
     ${crumbs([["Accueil", "/"], ["Architecte à Lyon", "/architecte-lyon/"]])}
     <p class="eyebrow"><b>—</b> Missions</p>
     <h1>Architecte <em>à Lyon</em></h1>
-    <p class="intro-text">Eric Picard, architecte D.P.L.G installé rue d’Austerlitz (Lyon 4e), accompagne particuliers, commerçants et maîtres d’ouvrage : extension de maison, maison contemporaine, rénovation d’appartement, aménagement de commerce — de l’étude de faisabilité au suivi de chantier.</p>
+    <p class="intro-text">Eric Picard, architecte D.P.L.G installé rue d’Austerlitz, à la Croix-Rousse (Lyon 4e), accompagne particuliers, commerçants et maîtres d’ouvrage : extension de maison, maison contemporaine, rénovation d’appartement, aménagement de commerce — de l’étude de faisabilité au suivi de chantier.</p>
     <div class="cta-actions"><a class="btn btn-light" href="${mailArchi}">Parlons de votre projet</a><a class="btn btn-ghost-light" href="tel:${site.phoneIntl}">${site.phone}</a></div>
   </div>
 </section>
