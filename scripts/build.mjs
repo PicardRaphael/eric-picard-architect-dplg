@@ -1037,7 +1037,11 @@ RewriteCond %{HTTP_HOST} ^www\\.picard-architecte\\.fr$ [NC]
 RewriteRule ^(.*)$ https://picard-architecte.fr/$1 [R=301,L]
 
 # Anciennes pages (Sitely) → nouvelles pages
-${[...redirects].map(([from, to]) => `Redirect 301 ${from} ${to}`).join("\n")}
+${[...redirects].map(([from, to]) => {
+  // Google a indexé les anciennes pages avec ET sans « .html » (ex. /podologie) : on couvre les deux, slash final compris.
+  const base = from.replace(/\.html$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return `RedirectMatch 301 ^${base}(\\.html)?/?$ ${to}`;
+}).join("\n")}
 
 # Compression et cache
 <IfModule mod_deflate.c>
